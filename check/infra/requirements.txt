@@ -1,5 +1,0 @@
-rich
-PyYAML
-numpy
-ifcopenshell
-setuptools

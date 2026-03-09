@@ -1,0 +1,17 @@
+{
+    "base": {
+        "infra": []
+    },
+    "engines": {
+        "venv": {
+            "infra": [
+                "install_python_dependencies"
+            ]
+        },
+        "colab": {
+            "infra": [
+                "install_python_dependencies"
+            ]
+        }
+    }
+}

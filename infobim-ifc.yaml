@@ -1,7 +1,0 @@
-modules:
-  - proj:
-      enabled: false
-language: en
-template:
-  name: "Default InfoBIM Community Template"
-  path: src/tui/terminal/template/infobim-community-template
