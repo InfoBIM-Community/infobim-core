@@ -13,7 +13,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "ifcopenshell",
-    "ontobdc>=0.4.1",
+    "ontobdc>=0.6.1",
 ]
 
 [project.scripts]
@@ -30,7 +30,7 @@ package-dir = {"" = "src"}
     "check/infra/*/*.sh",
     "module/**",
     "run/*.sh",
-    "cli.py",
+    "cli/**",
 ]
 
 [tool.setuptools.packages.find]
