@@ -1,47 +1,62 @@
 #!/bin/bash
 
 # Get the directory where the script is located
-INFOBIM_CHECK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # When installed via pip, the structure is flat inside site-packages/ontobdc
-# INFOBIM_CHECK_DIR is .../ontobdc/check
+# SCRIPT_DIR is .../ontobdc/check
 # MODULE_ROOT is .../ontobdc
-MODULE_ROOT="$(cd "${INFOBIM_CHECK_DIR}/.." && pwd)"
+MODULE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# Try to find message_box.sh in likely locations
-# 1. In project root (development mode): .../src/ontobdc/../../message_box.sh -> src/../message_box.sh (ontobdc-wip/message_box.sh)
-# 2. In installed package root: .../site-packages/ontobdc/message_box.sh
-
-# Find ontobdc message_box
-if [ -f "${MODULE_ROOT}/../../message_box.sh" ]; then
-    MESSAGE_BOX="${MODULE_ROOT}/../../message_box.sh"
-elif [ -f "${MODULE_ROOT}/message_box.sh" ]; then
-    MESSAGE_BOX="${MODULE_ROOT}/message_box.sh"
+# Resolve python interpreter (prefer venv) and locate ontobdc's message_box.sh
+PYTHON_BIN="python3"
+if [ -n "$VIRTUAL_ENV" ] && [ -x "$VIRTUAL_ENV/bin/python3" ]; then
+    PYTHON_BIN="$VIRTUAL_ENV/bin/python3"
 else
-    # Try finding via python
-    MESSAGE_BOX=$(python3 -c "import ontobdc, os; print(os.path.join(os.path.dirname(ontobdc.__file__), 'message_box.sh'))" 2>/dev/null)
+    SEARCH_DIR="$(pwd)"
+    for i in {1..7}; do
+        if [ -x "$SEARCH_DIR/.venv/bin/python3" ]; then
+            PYTHON_BIN="$SEARCH_DIR/.venv/bin/python3"
+            break
+        fi
+        SEARCH_DIR="$(dirname "$SEARCH_DIR")"
+    done
+fi
+
+MESSAGE_BOX="$("$PYTHON_BIN" -c "import ontobdc, os; print(os.path.join(os.path.dirname(ontobdc.__file__), 'cli', 'message_box.sh'))" 2>/dev/null)"
+if [ -z "${MESSAGE_BOX}" ] || [ ! -f "${MESSAGE_BOX}" ]; then
+    MESSAGE_BOX="${MODULE_ROOT}/cli/message_box.sh"
+fi
+
+PRINT_LOG="$("$PYTHON_BIN" -c "import ontobdc, os; print(os.path.join(os.path.dirname(ontobdc.__file__), 'cli', 'print_log.sh'))" 2>/dev/null)"
+if [ -z "${PRINT_LOG}" ] || [ ! -f "${PRINT_LOG}" ]; then
+    PRINT_LOG="${MODULE_ROOT}/cli/print_log.sh"
 fi
 
 # Define paths
-CONFIG_JSON="${INFOBIM_CHECK_DIR}/config.json"
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+GRAY='\033[0;90m'
+WHITE='\033[1;37m'
+RESET='\033[0m'
+CONFIG_JSON="${SCRIPT_DIR}/config.json"
+FULL_HLINE="----------------------------------------"
 
 if [ -f "${MESSAGE_BOX}" ]; then
     source "${MESSAGE_BOX}"
 else
     # Fallback if message_box is missing
+    # echo "Warning: message_box.sh not found at ${MESSAGE_BOX}"
     print_message_box() {
         echo "[$1] $2: $3"
         echo -e "$4"
     }
-    # Define colors if not sourced
-    RED='\033[0;31m'
-    GREEN='\033[0;32m'
-    YELLOW='\033[1;33m'
-    BLUE='\033[0;34m'
-    CYAN='\033[0;36m'
-    GRAY='\033[0;90m'
-    WHITE='\033[1;37m'
-    RESET='\033[0m'
+fi
+
+if [ -f "${MESSAGE_BOX}" ]; then
     FULL_HLINE="----------------------------------------"
 fi
 
@@ -57,40 +72,10 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-echo ""
 echo -e "${GRAY}${FULL_HLINE}${RESET}"
-echo -e "${CYAN}Running InfoBIM System Checks...${RESET}"
+echo -e "${CYAN}Running System Checks...${RESET}"
 echo -e "${GRAY}${FULL_HLINE}${RESET}"
 echo ""
-
-# Activate Venv if not active (crucial for checks that rely on venv)
-if [ -z "$VIRTUAL_ENV" ]; then
-    # Try to find venv relative to INFOBIM_CHECK_DIR or CWD
-    # Assuming standard structure: infobim-stack/.venv
-    # INFOBIM_CHECK_DIR is .../infobim/src/infobim/check
-    # Try relative to script location first
-    POTENTIAL_VENV_1="$(cd "${INFOBIM_CHECK_DIR}/../../../../../.venv" 2>/dev/null && pwd)/bin/activate"
-    # Try relative to current working directory
-    POTENTIAL_VENV_2="$(pwd)/.venv/bin/activate"
-    
-    if [ -f "$POTENTIAL_VENV_1" ]; then
-        source "$POTENTIAL_VENV_1"
-    elif [ -f "$POTENTIAL_VENV_2" ]; then
-        source "$POTENTIAL_VENV_2"
-    fi
-fi
-
-# Ensure VIRTUAL_ENV is exported if we sourced it
-if [ -z "$VIRTUAL_ENV" ]; then
-    # Check if we are running via a python that is inside a venv (common when calling script from wrapper)
-    PYTHON_BIN=$(which python3)
-    if [[ "$PYTHON_BIN" == *".venv"* || "$PYTHON_BIN" == *"venv"* ]]; then
-        # Reconstruct VIRTUAL_ENV path
-        export VIRTUAL_ENV="${PYTHON_BIN%/bin/python3}"
-        # Update PATH to ensure venv bin is first
-        export PATH="$VIRTUAL_ENV/bin:$PATH"
-    fi
-fi
 
 ERRORS=()
 WARNINGS=()
@@ -99,13 +84,12 @@ run_checks() {
     local DIR="$1"
     local NAME="$2"
     local ENGINE="$3"
-    local CFG="$4"
     
     echo -e "${YELLOW}❯ ${WHITE}Checking ${CYAN}${NAME}${RESET}"
     
-    if [ ! -f "$CFG" ]; then
-         echo -e "  ${RED}✗ Config file not found: ${CFG}${RESET}"
-         ERRORS+=("Config file missing for $NAME")
+    if [ ! -f "$CONFIG_JSON" ]; then
+         echo -e "  ${RED}✗ Config file not found: ${CONFIG_JSON}${RESET}"
+         ERRORS+=("Config file missing")
          return
     fi
 
@@ -113,21 +97,27 @@ run_checks() {
     # Get base checks
     BASE_CHECKS=$(python3 -c "import json; import sys; 
 try:
-    with open('$CFG') as f: data = json.load(f);
+    with open('$CONFIG_JSON') as f: data = json.load(f);
     print(' '.join(data.get('base', {}).get('$NAME', [])))
 except Exception as e: print(e, file=sys.stderr)")
 
     # Get engine specific checks
     ENGINE_CHECKS=$(python3 -c "import json; import sys; 
 try:
-    with open('$CFG') as f: data = json.load(f);
+    with open('$CONFIG_JSON') as f: data = json.load(f);
     print(' '.join(data.get('engines', {}).get('$ENGINE', {}).get('$NAME', [])))
 except Exception as e: print(e, file=sys.stderr)")
 
-    CHECKS="$BASE_CHECKS $ENGINE_CHECKS"
+    INFOBIM_CHECKS=$(python3 -c "import json; import sys; 
+try:
+    with open('$CONFIG_JSON') as f: data = json.load(f);
+    print(' '.join(data.get('infobim', {}).get('$NAME', [])))
+except Exception as e: print(e, file=sys.stderr)")
+
+    CHECKS="$BASE_CHECKS $ENGINE_CHECKS $INFOBIM_CHECKS"
     
     if [ -z "$CHECKS" ] || [ "$CHECKS" == " " ]; then
-        echo -e "  ${GRAY}• No checks found for $NAME in $ENGINE${RESET}"
+        print_message_box "RED" "Error" "System Check Failed" "• No checks found for $NAME in $ENGINE$"
         return
     fi
 
@@ -155,7 +145,7 @@ except Exception as e: print(e, file=sys.stderr)")
             if [ $RET_CODE -eq 0 ]; then
                  echo -e "  ${GREEN}✓ ${DESCRIPTION}${RESET}"
             else
-                 # If return code is 2, it's a fatal error
+                 # If return code is 2, it's a fatal error that requires immediate attention (and potentially abort via repair)
                  IS_FATAL=false
                  if [ $RET_CODE -eq 2 ]; then
                     IS_FATAL=true
@@ -173,10 +163,12 @@ except Exception as e: print(e, file=sys.stderr)")
                  fi
 
                  if [ "$HOTFIXED" = false ]; then
+                     # If fatal error, force repair attempt immediately regardless of --repair flag
+                     # Or simply fail hard if repair() calls exit 1
                      if [ "$IS_FATAL" = true ]; then
                          echo -e "  ${RED}✗ ${DESCRIPTION} (FATAL)${RESET}"
                          if type repair &>/dev/null; then
-                             repair
+                             repair # This is expected to exit 1 if it can't fix
                          else
                              echo -e "${RED}FATAL ERROR: ${DESCRIPTION} failed and no repair available.${RESET}"
                              exit 1
@@ -184,7 +176,11 @@ except Exception as e: print(e, file=sys.stderr)")
                      fi
 
                      if [ "$REPAIR_MODE" = true ]; then
-                         echo -e "  ${YELLOW}⚡ Attempting repair for: ${DESCRIPTION}...${RESET}"
+                        if [ -f "${PRINT_LOG}" ]; then
+                            bash "${PRINT_LOG}" "WARN" "Attempting repair for: ${DESCRIPTION}..."
+                        else
+                            echo -e "  ${YELLOW}⚡ Attempting repair for: ${DESCRIPTION}...${RESET}"
+                        fi
                          if type repair &>/dev/null; then
                              repair
                              
@@ -213,37 +209,52 @@ except Exception as e: print(e, file=sys.stderr)")
 }
 
 # Determine Engine
-ENGINE="venv"
-# Heuristic for colab
-if [ -d "/content" ]; then
+# Try to load from .__ontobdc__/config.yaml
+CONFIG_YAML=".__ontobdc__/config.yaml"
+ENGINE="venv" # Default fallback
+
+if [ -f "$CONFIG_YAML" ]; then
+    # Parse engine from yaml using simple grep/awk if python yaml not avail, or python
+    # Using python for robustness
+    DETECTED_ENGINE=$(python3 -c "import yaml; 
+try: 
+    with open('$CONFIG_YAML') as f: c = yaml.safe_load(f); 
+    print(c.get('engine', 'venv'))
+except: print('venv')")
+    if [ ! -z "$DETECTED_ENGINE" ]; then
+        ENGINE="$DETECTED_ENGINE"
+    fi
+elif [ -d "/content" ]; then
+    # Heuristic for colab if config doesn't exist
     ENGINE="colab"
 fi
 
-# Run OntoBDC Checks
-ONTOBDC_DIR=$(python3 -c "import ontobdc, os; print(os.path.dirname(ontobdc.__file__))" 2>/dev/null)
-if [ -n "$ONTOBDC_DIR" ] && [ -d "$ONTOBDC_DIR/check" ]; then
-    ONTOBDC_CHECK_DIR="$ONTOBDC_DIR/check"
-    ONTOBDC_CONFIG="$ONTOBDC_CHECK_DIR/config.json"
-    
-    if [[ "$SCOPE" == "all" || "$SCOPE" == "infra" ]]; then
-        INFRA_DIR="${ONTOBDC_CHECK_DIR}/infra"
-        if [[ -d "${INFRA_DIR}" ]]; then
-            run_checks "${INFRA_DIR}" "infra" "$ENGINE" "$ONTOBDC_CONFIG"
-        fi
-    fi
-else
-    echo -e "${YELLOW}Warning: OntoBDC check directory not found.${RESET}"
-fi
-
-# Run InfoBIM Checks
 if [[ "$SCOPE" == "all" || "$SCOPE" == "infra" ]]; then
-    # Correct path to infra checks for infobim
-    INFRA_DIR="${INFOBIM_CHECK_DIR}/infra"
+    PYTHON_BIN="python3"
+    if [ -n "$VIRTUAL_ENV" ] && [ -x "$VIRTUAL_ENV/bin/python3" ]; then
+        PYTHON_BIN="$VIRTUAL_ENV/bin/python3"
+    else
+        SEARCH_DIR="$(pwd)"
+        for i in {1..7}; do
+            if [ -x "$SEARCH_DIR/.venv/bin/python3" ]; then
+                PYTHON_BIN="$SEARCH_DIR/.venv/bin/python3"
+                break
+            fi
+            SEARCH_DIR="$(dirname "$SEARCH_DIR")"
+        done
+    fi
+
+    INFRA_DIR="$("$PYTHON_BIN" -c "import ontobdc, os; print(os.path.join(os.path.dirname(ontobdc.__file__), 'check', 'infra'))" 2>/dev/null)"
+    if [[ -z "${INFRA_DIR}" || ! -d "${INFRA_DIR}" ]]; then
+        INFRA_DIR="${SCRIPT_DIR}/infra"
+    fi
     
     if [[ -d "${INFRA_DIR}" ]]; then
-        run_checks "${INFRA_DIR}" "infra" "$ENGINE" "$CONFIG_JSON"
-    else 
-         echo -e "${RED}Error: InfoBIM infra directory not found: ${INFRA_DIR}${RESET}"
+        run_checks "${INFRA_DIR}" "infra" "$ENGINE"
+    else
+        # Try finding it relative to module root if we are in a weird symlink situation?
+        # Or maybe it's missing in installation
+        echo -e "${RED}Error: Infra checks directory not found at ${INFRA_DIR}${RESET}"
     fi
 fi
 
@@ -263,7 +274,8 @@ if [ ${#ERRORS[@]} -eq 0 ]; then
         done
     fi
     if type print_message_box &>/dev/null; then
-        print_message_box "$GREEN" "Success" "System Operational" "$MSG"
+        # Green message box for success
+        print_message_box "GREEN" "Success" "System Operational" "$MSG"
     else
         echo -e "${GREEN}Success: System Operational${RESET}\n$MSG"
     fi
@@ -281,7 +293,7 @@ else
     fi
     
     if type print_message_box &>/dev/null; then
-        print_message_box "$RED" "Error" "System Check Failed" "$MSG"
+        print_message_box "RED" "Error" "System Check Failed" "$MSG"
     else
         echo -e "${RED}Error: System Check Failed${RESET}\n$MSG"
     fi

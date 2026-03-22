@@ -20,7 +20,7 @@ class IfcBuildingListRenderer:
             console.print("[yellow]No buildings found.[/yellow]")
             return
 
-        console.print(f"[green]Buildings found: {count}[/green]")
+        console.print(f"\n[green]Buildings found: {count}[/green]\n")
 
         for building in buildings:
             building_name = building.get("Name", "Unknown Building")

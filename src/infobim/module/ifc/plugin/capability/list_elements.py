@@ -37,6 +37,18 @@ class ListIfcElementsCapability(Capability):
                     "default": "IfcProduct",
                     "description": "IFC Class to list (e.g. IfcWall, IfcWindow).",
                 },
+                "start": {
+                    "type": "integer",
+                    "uri": "org.ontobdc.domain.context.input.pagination.start",
+                    "required": False,
+                    "description": "Starting index for pagination (0 = first)",
+                },
+                "limit": {
+                    "type": "integer",
+                    "uri": "org.ontobdc.domain.context.input.pagination.limit",
+                    "required": False,
+                    "description": "Maximum number of files to return (0 = no limit)",
+                },
             },
         },
         output_schema={
@@ -74,6 +86,9 @@ class ListIfcElementsCapability(Capability):
         # Ensure we prioritize user input over default, handling both hyphen and underscore keys
         ifc_class = context.get_parameter_value("ifc_class") or "IfcProduct"
 
+        limit = context.get_parameter_value("limit") or 0
+        start = context.get_parameter_value("start") or 0
+
         try:
             # Open the IFC file using IfcOpenShell
             ifc_file = ifcopenshell.open(ifc_path)
@@ -101,6 +116,12 @@ class ListIfcElementsCapability(Capability):
 
         # Sort by Name
         data.sort(key=lambda x: x.get("Name", ""))
+
+        if start > 0:
+            data = data[start:]
+
+        if limit > 0:
+            data = data[:limit]
 
         return {
             "org.infobim.domain.ifc.element.list.content": data,

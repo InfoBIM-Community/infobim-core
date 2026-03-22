@@ -7,7 +7,7 @@
     },
     "base": {
         "infra": [
-            "is_connected_to_intern2et",
+            "is_connected_to_internet",
             "is_root_absolute_path_configured",
             "is_engine_installed"
         ]
