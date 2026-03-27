@@ -1,8 +1,10 @@
 
 import os
 import sys
+import json
 import argparse
 import subprocess
+from typing import Any, Dict
 from infobim.run.run import main as run_main
 from ontobdc.cli.init import log, message_box
 
@@ -11,30 +13,73 @@ try:
 except ImportError:
     list_main = None
 
+def get_script_dir() -> str:
+    """
+    Get the module root directory (ontobdc/).
+    """
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    module_root = os.path.abspath(os.path.join(script_dir, ".."))
+    return module_root
 
-def check_main(args):
+
+def check_main(silent: bool = True):
     # Get the directory of this file (src/ontobdc/cli)
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    # Path to check.sh (src/ontobdc/check/check.sh)
-    # cli/.. -> src/ontobdc -> check -> check.sh
-    check_script = os.path.join(current_dir, "..", "check", "check.sh")
-    
-    if not os.path.exists(check_script):
-        print(f"Error: check.sh not found at {check_script}")
+    from ontobdc.cli import get_root_dir
+    root_dir: str = get_root_dir()
+    if not root_dir:
+        message_box("ERROR", "Error", "Config Error", "Failed to find ontobdc_dir in config.yaml.")
         sys.exit(1)
-        
-    # Build command arguments
-    cmd = [check_script]
-    if args.repair:
-        cmd.append("--repair")
-    
-    # Execute the shell script
+
+    ontobdc_dir: str = os.path.join(root_dir, ".__ontobdc__")
+    if not os.path.exists(ontobdc_dir):
+        message_box("ERROR", "Error", "Config Error", f"Failed to find ontobdc_dir in {root_dir}.")
+        sys.exit(1)
+
+    script_dir: str = get_script_dir()
+    if not script_dir:
+        message_box("ERROR", "Error", "Config Error", "Failed to find script_dir in config.yaml.")
+        sys.exit(1)
+
+    config_file = os.path.join(script_dir, "check", "config.json")
+    if not os.path.exists(config_file):
+        message_box("ERROR", "Error", "Config Error", f"Failed to find config.json in {script_dir}.")
+        sys.exit(1)
+
     try:
-        subprocess.run(cmd, check=True)
+        with open(config_file, 'r') as f:
+            data = json.load(f)
+    except Exception as e:
+        message_box("ERROR", "Error", "JSON Validation Error", f"Failed to load config.json validation: {e}")
+        sys.exit(1)
+
+    valid_engines: Dict[str, Any] = {
+        "script_path": data.get('script_path', {}),
+        "base": data.get('base', {}),
+        "engine": data.get('engine', {})
+    }
+
+    check_file = os.path.join(ontobdc_dir, "check.json")
+    try:
+        os.makedirs(ontobdc_dir, exist_ok=True)
+        with open(check_file, "w") as f:
+            json.dump(valid_engines, f, indent=2)
+    except Exception as e:
+        message_box("ERROR", "Error", "JSON Write Error", f"Failed to write check.json: {e}")
+        sys.exit(1)
+
+    # Execute the shell script
+    cmd = ['ontobdc', 'check', '--repair']
+
+    try:
+        if silent:
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            subprocess.run(cmd, check=True)
+
     except subprocess.CalledProcessError as e:
         sys.exit(e.returncode)
     except Exception as e:
-        print(f"Error executing check script: {e}")
+        message_box("ERROR", "Error", "Execution Error", f"Failed to execute check script: {e}")
         sys.exit(1)
 
 
@@ -90,35 +135,22 @@ def main():
         current_dir = os.path.dirname(os.path.abspath(__file__))
         print_log_script = os.path.join(current_dir, "print_log.sh")
 
-    if cmd == "init":
+    from ontobdc.cli import config_data as get_config_data
+    from typing import Dict, Any
+    print('')
+
+    config_data: Dict[str, Any] = get_config_data()
+    if not config_data:
+        subprocess.run(
+            ["bash", print_log_script, "WARN", "InfoBIM config data is not correctly installed. Trying to auto-repair..."],
+            check=False,
+        )
+
         from infobim.cli.init import init_main
         init_main()
         sys.exit(0)
 
-    else:
-        # Check if engine is installed/initialized
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        is_engine_installed_script = os.path.join(current_dir, "..", "check", "infra", "is_engine_installed", "init.sh")
-        if not os.path.exists(is_engine_installed_script):
-            try:
-                import ontobdc
-
-                is_engine_installed_script = os.path.join(
-                    os.path.dirname(ontobdc.__file__), "check", "infra", "is_engine_installed", "init.sh"
-                )
-            except Exception:
-                pass
-
-        if os.path.exists(is_engine_installed_script):
-            check_cmd = f"source {is_engine_installed_script} && check"
-            try:
-                subprocess.run(check_cmd, shell=True, check=True, executable="/bin/bash", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            except subprocess.CalledProcessError:
-                message_box("RED", "Error", "Not Initialized", "InfoBIM is not initialized. Please run 'infobim init'.")
-                sys.exit(1)
-        else:
-            message_box("RED", "Error", f"Fatal Error", "InfoBIM engine is not correctly installed. Please run 'pip uninstall infobim' and then 'pip install infobim' again.")
-            sys.exit(1)
+    check_main()
 
     if cmd == "run":
         sys.argv = [sys.argv[0]] + sys.argv[2:]
@@ -133,11 +165,7 @@ def main():
             sys.exit(1)
 
     elif cmd == "check":
-        parser = argparse.ArgumentParser(description="System Check")
-        parser.add_argument("--repair", action="store_true", help="Attempt to repair issues")
-        # Parse only arguments after 'check'
-        args, unknown = parser.parse_known_args(sys.argv[2:])
-        check_main(args)
+        check_main(silent=False)
 
     else:
         print("")

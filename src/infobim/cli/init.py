@@ -37,7 +37,6 @@ def init_main():
             )
             sys.exit(1)
 
-        print("")
         log("INFO", f"Automatically detected engine: {engine}")
 
     # 1. Validate Engine against check/config.json
@@ -104,13 +103,9 @@ def init_main():
     # We delegate to check command
     print("")
     from infobim.cli import check_main
-    
-    # Mock args for check
-    class CheckArgs:
-        repair = True
         
     try:
-        check_main(CheckArgs())
+        check_main()
     except SystemExit:
         # check_main calls sys.exit, we catch it to not crash if check fails but init succeeded
         pass
