@@ -1,4 +1,10 @@
 {
+    "script_path": {
+        "alternative": [
+            "@root_path.joinpath('wip.src.infobim.check')",
+            "@script_path.move(['..', 'infobim']).joinpath('check')"
+        ]
+    },
     "config": {
         "engines": [
             "venv",
@@ -7,28 +13,26 @@
     },
     "base": {
         "infra": [
-            "is_connected_to_intern2et",
+            "is_connected_to_internet",
             "is_root_absolute_path_configured",
-            "is_engine_installed"
+            "is_engine_installed",
+            "install_python_dependencies"
+        ],
+        "infobim": [
+            "@script_path.get('is_infobim_set')",
+            "@script_path.get('install_python_dependencies')"
         ]
     },
-    "engines": {
+    "engine": {
         "venv": {
             "infra": [
-                "is_venv_active",
-                "install_python_dependencies"
+                "is_venv_active"
             ]
         },
         "colab": {
             "infra": [
-                "is_colab",
-                "install_python_dependencies"
+                "is_colab"
             ]
         }
-    },
-    "infobim": {
-        "infra": [
-            "is_infobim_initialized"
-        ]
     }
 }
