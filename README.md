@@ -1,4 +1,4 @@
-# InfoBIM IFC
+# InfoBIM Core
 
 <div align="center">
 <pre>
@@ -11,7 +11,9 @@
 </pre>
 </div>
 
-![Python](https://img.shields.io/badge/python-3.x-blue?style=for-the-badge&logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/python-%3E%3D3.10-blue?style=for-the-badge&logo=python&logoColor=white)
+![Engine: venv](https://img.shields.io/badge/engine-venv-2ea44f?style=for-the-badge)
+![Engine: colab](https://img.shields.io/badge/engine-colab-f9ab00?style=for-the-badge&logo=googlecolab&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge&logo=apache)
 ![Status](https://img.shields.io/badge/Status-Development-yellow?style=for-the-badge)
 
@@ -25,62 +27,72 @@ Whether you are a human running commands in the terminal or an **AI Agent** plan
 
 ---
 
+## Overview
+
+- **CLI**: `infobim | check | run | list`
+- **Engines**: supports `venv` and `colab` via OntoBDC configuration
+- **IFC Support**: built on top of IfcOpenShell for openBIM workflows
+
+---
+
 ## 🚀 Quick Start
 
 ### 1. Install
+
+InfoBIM is designed to require as little setup as possible to get started. You can currently use InfoBIM locally (Python venv) or in Google Colab, depending on your needs.
+
+#### Local Installation
+Local installation requires Python 3.10+ with pip and venv available. To create and activate a virtual environment, go to the project directory and run:
 ```bash
-# 1. Download the CLI
-wget https://raw.githubusercontent.com/InfoBIM-Community/infobim-ifc/master/infobim
-
-# 2. Make it executable
-chmod +x infobim
-
-# 3. Install environment (downloads the stack & setups venv)
-./infobim install
-
-# Option A: Install with Docker support
-# ./infobim install --docker
-
-# Option B: Google Colab Mode (Optimized for Notebooks)
-# - Skips virtualenv creation (uses system Python)
-# - Creates 'infobim-ifc.env.yaml' with engine: colab
-# - Merges configs automatically (Base -> Env -> User)
-# ./infobim install --colab
+python -m venv .venv
+source .venv/bin/activate
 ```
+Then:
+```bash
+pip install infobim
+```
+
+To verify the installation, run:
+```bash
+infobim --version
+```
+
+And, welcome to InfoBIM world!
+
+#### Google Colab Mode (Optimized for Notebooks)
+All current InfoBIM features are available in Colab. You can check the example notebook here:
+
+[Google Colab Notebook](https://colab.research.google.com/github/infobim/infobim-stack/blob/main/wip/colab.ipynb)
+
+---
 
 ### 2. Run a Capability
-Execute a specific task directly without opening the full UI:
 
+Capabilities are the core of InfoBIM. They define the actions that can be performed on IFC models. When you execute a capability, InfoBIM will:
+
+- Check whether the capability is available in the current environment.
+- Execute the capability with the provided parameters.
+- Return the execution results.
+
+For this reason, only capabilities whose required parameters are satisfied are shown in the runtime menu. When you run:
 ```bash
-# List all sewage pipes (validating against NBR 8160)
-./infobim run org.infobim.base.capability.list_sewage_pipes --ifc-path ./data/my_project.ifc
+infobim run
 ```
 
-![Report Example](docs/images/report.png)
+Interactive mode (terminal menu) shows a UI to select an available capability. Most InfoBIM capabilities require an IFC file path, so you will usually pass `--ifc-path` when running by ID.
 
-### 3. Agent Discovery (New!)
-Are you an LLM or building an Agent? Get the full machine-readable catalog of available tools:
+---
+### 3. List available capabilities
 
+Lists all capabilities discovered in the current environment (after initialization and checks).
 ```bash
-./infobim run --json
+infobim list
 ```
+![Capabilities List](docs/images/capabilities_list.png)
 
-### 4. File Discovery & Scanning
-Automatically scan and index IFC files located in the `data/incoming` directory. This is the first step to bring your BIM models into the InfoBIM environment.
+---
 
-```bash
-./infobim ifc scan
-```
-
-The system will search for `.ifc` files and display them in the terminal:
-
-![File Search](docs/images/ifc_file_search.png)
-
-Once scanned, the files are ready to be processed by other capabilities:
-
-![File List](docs/images/ifc_file_list.png)
-
-### 5. System Health & Maintenance
+### 4. System Health & Maintenance
 InfoBIM includes self-diagnostic tools to ensure your environment is correctly configured.
 
 **Run System Check:**
@@ -94,44 +106,46 @@ If a check fails, you can try the repair mode, which attempts to fix common issu
 ```bash
 ./infobim check --repair
 ```
+![System Check](docs/images/system_check.png)
 
 ---
 
-## 🧩 Capabilities
+## 🧩 IFC Capabilities
 
 A **Capability** is the atomic unit of work in InfoBIM. It wraps your Python scripts with:
 1.  **Metadata**: Name, version, description.
 2.  **Schema**: Formal definition of Inputs (arguments) and Outputs (return data).
 3.  **Docs**: Embedded documentation for both humans and LLMs.
 
-### Included Capabilities (core)
-
-| ID | Description |
-|----|-------------|
-| `org.infobim.base.capability.list_pipes` | Extracts pipe segments with geometry (Length, Z-coordinates) and properties. |
-| `org.infobim.base.capability.list_sewage_pipes` | Specialized extraction for Sewage systems. Calculates **Real Slope** vs **Minimum Slope (NBR 8160)**. |
-| `org.infobim.base.capability.list_project_units` | Detects IFC project units, schema and length scale (meters). |
-| `org.infobim.base.capability.list_material` | Lists material associations for IFC elements (GlobalId → Material). |
-
----
-
-## 🏗️ Architecture
-
-InfoBIM IFC is designed to be the "Operating System" for your BIM scripts.
+Thus, InfoBIM IFC acts as a lightweight runtime layer for BIM automation, turning scripts into discoverable and repeatable capabilities.
 
 *   **Runtime**: Handles the environment (Python, Docker, IFCOpenShell).
 *   **Registry**: Discovers and registers available Capabilities.
 *   **Interfaces**:
-    *   **CLI**: Direct execution (`./infobim run ...`).
-    *   **TUI**: Interactive Text User Interface (`./infobim run`).
-    *   **JSON-RPC**: (Coming soon) for remote execution.
+    *   **CLI**: Direct execution (`./infobim run --id <capability_id> --ifc-path ./path/to/model.ifc`).
+    *   **TUI**: Interactive Text User Interface (`./infobim run --ifc-path ./path/to/model.ifc`).
+
+Examples:
+
+| ID | Name | Description | Key parameters |
+|---|---|---|---|
+| `org.infobim.domain.ifc.capability.list_elements` | List IFC Elements | Lists IFC elements by IFC class | `--ifc-path`, `--ifc-class`, `--start`, `--limit` |
+| `org.infobim.domain.ifc.capability.list_property_sets` | List IFC Property Sets | Lists Psets and properties of an element | `--ifc-path`, `--global-id` |
+| `org.infobim.domain.ifc.capability.inspect_element` | Inspect IFC Element | Inspects attributes and properties of an element | `--ifc-path`, `--global-id` |
+| `org.infobim.domain.ifc.capability.list_buildings` | List IFC Buildings | Lists IfcBuildings and their Storeys | `--ifc-path` |
+
+```bash
+infobim run --id org.infobim.domain.ifc.capability.list_buildings --ifc-path ./path/to/model.ifc
+infobim run --id org.infobim.domain.ifc.capability.list_property_sets --ifc-path ./path/to/model.ifc --global-id '2T$yW1JQv9FQ0kqP8m9qXb'
+infobim run --id org.infobim.domain.ifc.capability.inspect_element --ifc-path ./path/to/model.ifc --global-id '2T$yW1JQv9FQ0kqP8m9qXb'
+```
 
 ---
 
 ## 🤖 For AI Agents
 
 InfoBIM is **Agent-First**.
-*   **Discovery**: `run --json` provides the tool definitions (compatible with OpenAI/Claude function calling).
+*   **Discovery**: `infobim list --json` provides the tool definitions (compatible with OpenAI/Claude function calling).
 *   **Deterministic Execution**: Agents don't "guess" geometry; they call Capabilities that return precise data.
 *   **Structured Output**: All capabilities return strict JSON data, making it easy for LLMs to reason about the results.
 

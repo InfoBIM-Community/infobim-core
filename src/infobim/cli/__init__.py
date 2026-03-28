@@ -117,7 +117,6 @@ def print_help():
     {GRAY}infobim{RESET} {CYAN}<command>{RESET} {GRAY}[flags/parameters]{RESET}
 
   {WHITE}Commands:{RESET}
-    {CYAN}init{RESET}      {GRAY}Initialize infobim config with engine (venv|colab){RESET}
     {CYAN}check{RESET}     {GRAY}Run infrastructure checks{RESET}
     {CYAN}run{RESET}       {GRAY}Run a capability via infobim/run{RESET}
     {CYAN}list{RESET}      {GRAY}List all available capabilities{RESET}
