@@ -17,8 +17,10 @@
             "is_root_absolute_path_configured",
             "is_engine_installed",
             "install_python_dependencies"
-        ],
-        "infobim": [
+        ]
+    },
+    "infobim": {
+        "infra": [
             "@script_path.get('is_infobim_set')",
             "@script_path.get('install_python_dependencies')"
         ]

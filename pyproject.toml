@@ -7,13 +7,13 @@ name = "infobim"
 authors = [
     { name = "Elias Magalhães", email = "elias@brasidata.com" }
 ]
-version = "0.2.0"
+version = "0.2.1"
 description = "InfoBIM"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "ifcopenshell",
-    "ontobdc>=0.6.8",
+    "ontobdc>=0.6.9",
 ]
 
 [project.scripts]

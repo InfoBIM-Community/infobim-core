@@ -1,5 +1,5 @@
 #!/bin/bash
-DESCRIPTION="Infobim Capability Configured"
+DESCRIPTION="Infra: Infobim Capability Configured"
 find_config() {
     local CUR="$(pwd)"
     for i in {1..7}; do
