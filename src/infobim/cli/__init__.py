@@ -13,12 +13,30 @@ try:
 except ImportError:
     list_main = None
 
+
 def get_script_dir() -> str:
     """
-    Get the module root directory (ontobdc/).
+    Get the module root directory (infobim/).
     """
+    try:
+        import infobim
+        if hasattr(infobim, '__path__'):
+            package_path = infobim.__path__[0]
+            return package_path
+    except Exception:
+        pass
+
+    try:
+        # pip show infobim | grep Location
+        location = subprocess.check_output(["pip", "show", "infobim", "|", "grep", "Location"]).decode("utf-8").split(":")[1].strip()
+        if location:
+            return os.path.join(location, "infobim")
+    except Exception:
+        pass
+
     script_dir = os.path.dirname(os.path.abspath(__file__))
     module_root = os.path.abspath(os.path.join(script_dir, ".."))
+
     return module_root
 
 
@@ -55,8 +73,11 @@ def check_main(silent: bool = True):
     valid_engines: Dict[str, Any] = {
         "script_path": data.get('script_path', {}),
         "base": data.get('base', {}),
+        "infobim": data.get('infobim', {}),
         "engine": data.get('engine', {})
     }
+
+    valid_engines["script_path"]["alternative"] = os.path.join(script_dir, "check")
 
     check_file = os.path.join(ontobdc_dir, "check.json")
     try:
