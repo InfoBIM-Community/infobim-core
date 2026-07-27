@@ -1,5 +1,6 @@
 from typing import List
 
+from infobim.shared.adapter.path import resolve_cli_input_path
 from ontobdc.cli.domain.model.command import CliCommandMetadata
 from ontobdc.cli.domain.port.command import CliCommandPort
 from ontobdc.cli.domain.request.command import CliCommandRequest
@@ -41,8 +42,9 @@ class StorageCreateCommand(CliCommandPort):
         ):
             return False
 
+        resolved_path = resolve_cli_input_path(self._request.command_args[1])
         self._request.context.delete_parameter("dataset_path")
-        self._request.context.set_parameter_value("container_path", self._request.command_args[1])
+        self._request.context.set_parameter_value("container_path", str(resolved_path))
 
         return True
 
