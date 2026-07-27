@@ -5,7 +5,8 @@ from infobim.context.adapter.entity import IfcRuntimeEntityAdapter
 from infobim.project.plugin.command.base import ProjectBaseCommand
 from infobim.shared.adapter.path import resolve_cli_input_path
 from ontobdc.cli.domain.exception.command import CliCommandArgumentException
-from ontobdc.cli.domain.port.command import CliCommandMetadata, CliCommandPort
+from ontobdc.cli.domain.model.command import CliCommandMetadata
+from ontobdc.cli.domain.port.command import CliCommandPort
 from ontobdc.cli.domain.request.command import CliCommandRequest
 from ontobdc.cli.domain.response.command import CommandResponse
 from ontobdc.storage import get_storage_file

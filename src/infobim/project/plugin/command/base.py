@@ -7,7 +7,8 @@ from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import DCTERMS, PROV, RDF, RDFS, Namespace
 
 from infobim.project.plugin.check.is_project_ready.check import main as check_project_ready
-from ontobdc.cli.domain.port.command import CliCommandMetadata, CliCommandPort
+from ontobdc.cli.domain.model.command import CliCommandMetadata
+from ontobdc.cli.domain.port.command import CliCommandPort
 from ontobdc.cli.domain.request.command import CliCommandRequest
 from ontobdc.cli.domain.response.command import ExceptionCommandResponse, ListCommandResponse
 from ontobdc.storage import get_storage_file
@@ -19,7 +20,7 @@ _IFCOWL: Namespace = Namespace("http://ifcowl.openbimstandards.org/IFC4#")
 _ontology_adapter: OntologyConfigAdapter = OntologyConfigAdapter(
     config_adapter=UnsetProjectRootConfigDataAdapter(),
 )
-_OBDC: Namespace = _ontology_adapter.get_ontology_by_prefix("obdc")
+_OBDC: Namespace = _ontology_adapter.get_ontology_namespace_by_prefix("obdc")
 
 
 class ProjectBaseCommand(CliCommandPort):

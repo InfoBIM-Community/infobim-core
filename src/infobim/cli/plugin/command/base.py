@@ -1,5 +1,6 @@
 
 from typing import Any, Dict, List, Optional
+import os
 from infobim.cli.adapter.machine import InfoBIMInitStateEvaluatorAdapter
 from infobim.cli.domain.context import InfoBIMCliContext
 from ontobdc.cli.domain.request.command import CliCommandRequest
@@ -9,6 +10,7 @@ from ontobdc.cli.domain.port.machine import CliInitProcessStatePort
 from ontobdc.cli.domain.response.command import CommandResponse, WelcomeCommandResponse
 from infobim.shared.adapter.config import ConfigDataAdapter
 from ontobdc.shared.domain.model.language import LanguageResource
+from ontobdc.shared.domain.exception.config import ProjectRootDirectoryNotSetError
 
 
 class CliBaseCommand(CliCommandPort):
@@ -51,7 +53,10 @@ class CliBaseCommand(CliCommandPort):
         """
         Execute the command.
         """
-        config_adapter: ConfigDataAdapter = ConfigDataAdapter()
+        try:
+            config_adapter: ConfigDataAdapter = ConfigDataAdapter()
+        except ProjectRootDirectoryNotSetError:
+            config_adapter = ConfigDataAdapter(root_dir=os.getcwd())
         system_status: str = self._system_status(config_adapter)
         welcome_content: Dict[str, Any] = {
             "hero": self._WELCOME_MARKDOWN,

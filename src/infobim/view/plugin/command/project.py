@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from infobim.project.plugin.command.base import ProjectBaseCommand
 from infobim.view.adapter.html import ProjectDashboardHtmlRenderer
-from ontobdc.cli.domain.port.command import CliCommandMetadata
+from ontobdc.cli.domain.model.command import CliCommandMetadata
 from ontobdc.cli.domain.request.command import CliCommandRequest
 from ontobdc.cli.domain.response.command import CommandResponse, ExceptionCommandResponse
 from ontobdc.storage import get_storage_file

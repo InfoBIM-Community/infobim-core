@@ -48,6 +48,13 @@ class ConfigDataAdapter(OntoBDCConfigDataAdapter):
 
         return {}
 
+    def _get_config_data(self) -> Dict[str, Any]:
+        config_data: Optional[Dict[str, Any]] = super()._get_config_data()
+        if isinstance(config_data, dict):
+            return config_data
+
+        return {}
+
     def _get_script_dir(self) -> str:
         try:
             import infobim
