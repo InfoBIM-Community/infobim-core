@@ -27,13 +27,14 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.package-data]
 "infobim" = [
+    "**/*.yaml",
+    "**/*.yml",
     "*.sh",
     "check/*.sh",
     "check/*.json",
     "check/infra/*/*.sh",
     "project/*.sh",
     "project/*.py",
-    "project/domain/machine/*.yaml",
     "context/**",
     "view/**",
     "module/**",
