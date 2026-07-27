@@ -33,6 +33,7 @@ package-dir = {"" = "src"}
     "check/infra/*/*.sh",
     "project/*.sh",
     "project/*.py",
+    "project/domain/machine/*.yaml",
     "context/**",
     "view/**",
     "module/**",
