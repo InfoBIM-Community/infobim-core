@@ -7,13 +7,16 @@ name = "infobim"
 authors = [
     { name = "Elias Magalhães", email = "elias@brasidata.com" }
 ]
-version = "0.2.2"
+version = "0.2.0"
 description = "InfoBIM"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "ifcopenshell",
-    "ontobdc>=0.6.9",
+    "jinja2",
+    "ontobdc>=0.11.0",
+    "Pillow",
+    "pyfiglet",
 ]
 
 [project.scripts]
@@ -28,6 +31,10 @@ package-dir = {"" = "src"}
     "check/*.sh",
     "check/*.json",
     "check/infra/*/*.sh",
+    "project/*.sh",
+    "project/*.py",
+    "context/**",
+    "view/**",
     "module/**",
     "run/*.sh",
     "cli/**",
@@ -36,4 +43,3 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["infobim*"]
-
