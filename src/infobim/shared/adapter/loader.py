@@ -3,6 +3,7 @@ import inspect
 import os
 from typing import Any, List, Type
 from infobim.shared.adapter.config import ConfigDataAdapter
+from ontobdc.shared.domain.exception.config import ProjectRootDirectoryNotSetError
 from ontobdc.shared.adapter.capability import Capability
 from ontobdc.shared.adapter.loader import (
     CapabilityLoader as OntoBDCCapabilityLoader,
@@ -17,7 +18,10 @@ class CommandLoader(OntoBDCCommandLoader):
     Command loader for plugin commands.
     """
     def _make_config_data_adapter(self) -> ConfigDataAdapter:
-        return ConfigDataAdapter()
+        try:
+            return ConfigDataAdapter()
+        except ProjectRootDirectoryNotSetError:
+            return ConfigDataAdapter(root_dir=os.getcwd())
 
     def _list_plugin_folder(self, resource: str) -> List[str]:
         discovered: List[str] = []
@@ -39,7 +43,10 @@ class CapabilityLoader(OntoBDCCapabilityLoader):
     Capability loader for InfoBIM plugins.
     """
     def _make_config_data_adapter(self) -> ConfigDataAdapter:
-        return ConfigDataAdapter()
+        try:
+            return ConfigDataAdapter()
+        except ProjectRootDirectoryNotSetError:
+            return ConfigDataAdapter(root_dir=os.getcwd())
 
     def _list_plugin_folder(self, resource: str) -> List[str]:
         discovered: List[str] = []

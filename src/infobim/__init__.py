@@ -1,0 +1,1 @@
+"""InfoBIM core package."""
