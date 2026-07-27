@@ -1,9 +1,50 @@
+import os
 from pathlib import Path
 from typing import Optional
 
 
+def normalize_cli_path(raw_path: str) -> str:
+    if not isinstance(raw_path, str):
+        raise ValueError("Path argument must be a string.")
+
+    normalized_path: str = raw_path.strip()
+    while (
+        len(normalized_path) >= 2
+        and normalized_path[0] == normalized_path[-1]
+        and normalized_path[0] in {"'", '"'}
+    ):
+        normalized_path = normalized_path[1:-1].strip()
+
+    if not normalized_path:
+        raise ValueError("Path argument cannot be empty.")
+
+    if "\x00" in normalized_path:
+        raise ValueError("Path argument contains a null character.")
+
+    if os.name == "nt":
+        invalid_characters: set[str] = set('<>"|?*')
+        path_without_drive: str = normalized_path
+        if len(path_without_drive) >= 2 and path_without_drive[1] == ":":
+            path_without_drive = path_without_drive[2:]
+
+        invalid_character: Optional[str] = next(
+            (
+                character
+                for character in path_without_drive
+                if character in invalid_characters or ord(character) < 32
+            ),
+            None,
+        )
+        if invalid_character is not None:
+            raise ValueError(
+                f"Path argument contains an invalid Windows character: {invalid_character!r}.",
+            )
+
+    return normalized_path
+
+
 def resolve_cli_input_path(raw_path: str, root_path: Optional[str] = None) -> Path:
-    candidate_path: Path = Path(raw_path).expanduser()
+    candidate_path: Path = Path(normalize_cli_path(raw_path)).expanduser()
     if candidate_path.is_absolute():
         return candidate_path.resolve()
 

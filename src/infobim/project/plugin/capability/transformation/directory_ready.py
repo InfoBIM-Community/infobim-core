@@ -30,7 +30,10 @@ class DirectoryReadyCapability(TransformationCapability):
             raise ValueError("Storage target path is missing from the command context.")
 
         target_path: Path = Path(target_path_value).expanduser().resolve()
-        target_path.mkdir(parents=True, exist_ok=True)
+        try:
+            target_path.mkdir(parents=True, exist_ok=True)
+        except OSError as error:
+            raise ValueError(f"Invalid storage target path: {target_path_value!r}.") from error
 
         return {
             "resulting_state": ContainerCreateProcessState.DIRECTORY_READY,
