@@ -3,7 +3,8 @@ from typing import Any, Dict, List, Optional
 from infobim.cli.adapter.machine import InfoBIMInitStateEvaluatorAdapter
 from infobim.cli.domain.context import InfoBIMCliContext
 from ontobdc.cli.domain.request.command import CliCommandRequest
-from ontobdc.cli.domain.port.command import CliCommandMetadata, CliCommandPort
+from ontobdc.cli.domain.model.command import CliCommandMetadata
+from ontobdc.cli.domain.port.command import CliCommandPort
 from ontobdc.cli.domain.port.machine import CliInitProcessStatePort
 from ontobdc.cli.domain.response.command import CommandResponse, WelcomeCommandResponse
 from infobim.shared.adapter.config import ConfigDataAdapter
