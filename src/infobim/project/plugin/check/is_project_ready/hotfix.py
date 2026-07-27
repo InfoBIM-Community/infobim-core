@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Optional
+from urllib.parse import quote
 
 from rdflib import Graph, URIRef
 from rdflib.namespace import DCTERMS, RDF, Namespace
@@ -73,7 +74,8 @@ def main(container_path: Optional[str] = None) -> int:
         project_graph.bind("dice", _DICE)
 
         container_uri: URIRef = URIRef(resolved_container_path.as_uri())
-        project_ref: URIRef = URIRef(f"urn:infobim:project:{resolved_container_path.name or 'local'}")
+        project_name: str = quote(resolved_container_path.name or "local", safe="")
+        project_ref: URIRef = URIRef(f"urn:infobim:project:{project_name}")
         #building_ref: URIRef = URIRef(f"{project_ref}:building")
 
         project_graph.add((project_ref, RDF.type, _IFCOWL.IfcProject))

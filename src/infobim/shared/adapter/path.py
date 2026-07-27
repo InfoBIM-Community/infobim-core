@@ -7,13 +7,7 @@ def normalize_cli_path(raw_path: str) -> str:
     if not isinstance(raw_path, str):
         raise ValueError("Path argument must be a string.")
 
-    normalized_path: str = raw_path.strip()
-    while (
-        len(normalized_path) >= 2
-        and normalized_path[0] == normalized_path[-1]
-        and normalized_path[0] in {"'", '"'}
-    ):
-        normalized_path = normalized_path[1:-1].strip()
+    normalized_path: str = raw_path.strip().strip("'\"").strip()
 
     if not normalized_path:
         raise ValueError("Path argument cannot be empty.")
