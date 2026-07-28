@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page_title }}</title>
+  <link rel="stylesheet" href="{{ asset_root }}/css/project_dashboard.css">
+</head>
+<body>
+  {% macro five_w_two_h_card(symbol, label, question, entry) -%}
+    <article class="five-w-two-h-row" id="{{ label | lower | replace(' ', '-') }}">
+      <header class="five-w-two-h-marker" aria-label="{{ label }}">
+        <span class="five-w-two-h-symbol">{{ symbol }}</span>
+        <span class="five-w-two-h-label">{{ label }}</span>
+      </header>
+
+      <div class="view-panel five-w-two-h-content">
+        <div class="view-panel-head">
+          <h2 class="view-panel-title">{{ question }}</h2>
+          {% if entry.summary %}
+            <p class="view-panel-copy">{{ entry.summary }}</p>
+          {% endif %}
+        </div>
+
+        {% if entry.items or entry.sources %}
+          <div class="view-panel-body five-w-two-h-body">
+            {% if entry.items %}
+              <ul class="five-w-two-h-list">
+                {% for item in entry.items %}
+                  <li>{{ item }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+
+            {% if entry.sources %}
+              <div class="five-w-two-h-sources">
+                <h3>Fontes e evidências</h3>
+                <ul class="five-w-two-h-source-list">
+                  {% for source in entry.sources %}
+                    <li>
+                      {% if source.href %}
+                        <a href="{{ source.href }}">{{ source.label }}</a>
+                      {% else %}
+                        <span>{{ source.label }}</span>
+                      {% endif %}
+                      {% if source.kind %}
+                        <small>{{ source.kind }}</small>
+                      {% endif %}
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </article>
+  {%- endmacro %}
+
+  <main class="view-shell">
+    <section class="view-hero-card five-w-two-h-hero">
+      <div class="view-brand">
+        {% if logo_href %}
+          <img class="view-brand-logo" src="{{ logo_href }}" alt="InfoBIM">
+        {% endif %}
+        <div class="view-brand-copy">
+          <span class="view-eyebrow">InfoBIM Workstream</span>
+          {% if workstream.identifier %}
+            <span class="view-eyebrow-meta">{{ workstream.identifier }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <h1>{{ workstream.name }}</h1>
+      {% if workstream.description %}
+        <p>{{ workstream.description }}</p>
+      {% endif %}
+    </section>
+
+    <nav class="five-w-two-h-index" aria-label="Índice 5W2H">
+      {% for marker in ("W", "W", "W", "W", "W", "H", "H") %}
+        <span>{{ marker }}</span>
+      {% endfor %}
+    </nav>
+
+    <section class="five-w-two-h-layout" aria-label="5W2H">
+      {{ five_w_two_h_card("W", "What", "O que será executado?", five_w_two_h.what) }}
+      {{ five_w_two_h_card("W", "Why", "Por que será executado?", five_w_two_h.why) }}
+      {{ five_w_two_h_card("W", "Where", "Onde será executado?", five_w_two_h.where) }}
+      {{ five_w_two_h_card("W", "When", "Quando será executado?", five_w_two_h.when) }}
+      {{ five_w_two_h_card("W", "Who", "Quem está envolvido?", five_w_two_h.who) }}
+      {{ five_w_two_h_card("H", "How", "Como será executado?", five_w_two_h.how) }}
+      {{ five_w_two_h_card("H", "How much", "Quanto será necessário?", five_w_two_h.how_much) }}
+    </section>
+  </main>
+</body>
+</html>
