@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from infobim.context.adapter.entity import IfcRuntimeEntityAdapter
-from infobim.shared.adapter.path import resolve_cli_input_path
+from infobim.shared.adapter.path import CliPathAdapter
 from ontobdc.cli.domain.exception.command import CliCommandArgumentException
 from ontobdc.cli.domain.model.command import CliCommandMetadata
 from ontobdc.cli.domain.port.command import CliCommandPort
@@ -40,12 +40,13 @@ class ContextLearnFromIfcElementCommand(CliCommandPort):
     def __init__(self, request: CliCommandRequest):
         self._request: CliCommandRequest = request
         self._entity_adapter = IfcRuntimeEntityAdapter()
+        self._path_adapter: CliPathAdapter = CliPathAdapter()
 
     def check(self) -> bool:
         raw_element, learn_from_path = self._parse_arguments()
         resolved_entity: Dict[str, str] = self._entity_adapter.resolve(raw_element)
 
-        resolved_path: Path = resolve_cli_input_path(
+        resolved_path: Path = self._path_adapter.resolve(
             learn_from_path,
             root_path=self._request.context.root_path,
         )

@@ -19,5 +19,10 @@ class CliCommandRunAdapter(OntoBDCCliCommandRunAdapter):
         if loader_class is None:
             loader_class = CommandLoader
 
-        return super().make(args, logger, check_level, loader_class)
-   
+        return super().make(
+            args,
+            logger,
+            check_level,
+            loader_class,
+            defer_check=True,
+        )

@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from infobim.context.adapter.entity import IfcRuntimeEntityAdapter
 from infobim.project.plugin.command.base import ProjectBaseCommand
-from infobim.shared.adapter.path import resolve_cli_input_path
+from infobim.shared.adapter.path import CliPathAdapter
 from ontobdc.cli.domain.exception.command import CliCommandArgumentException
 from ontobdc.cli.domain.model.command import CliCommandMetadata
 from ontobdc.cli.domain.port.command import CliCommandPort
@@ -19,22 +19,22 @@ class ProjectImportCommand(CliCommandPort):
         description="Import a file into an InfoBIM project for a resolved IFC element.",
         arguments=[
             {
-                "accepts": ["--project-id"],
+                "accepts": ["--project", "--project-id"],
                 "valued": True,
                 "description": "Select the active project that will receive the import.",
-                "usage": "infobim project --project-id <project_id> --element <element_uri> --import <file_path>",
+                "usage": "infobim project --project <project_id> --element <element_uri> --import <file_path>",
             },
             {
                 "accepts": ["--element"],
                 "valued": True,
                 "description": "Resolve an IFC element name or URI such as IfcWorkSchedule.",
-                "usage": "infobim project --project-id <project_id> --element <element_uri> --import <file_path>",
+                "usage": "infobim project --project <project_id> --element <element_uri> --import <file_path>",
             },
             {
                 "accepts": ["--import"],
                 "valued": True,
                 "description": "Select the source file to be imported into the project.",
-                "usage": "infobim project --project-id <project_id> --element <element_uri> --import <file_path>",
+                "usage": "infobim project --project <project_id> --element <element_uri> --import <file_path>",
             },
         ],
     )
@@ -44,7 +44,7 @@ class ProjectImportCommand(CliCommandPort):
         return (
             len(args) == 7
             and args[0] == "project"
-            and "--project-id" in args
+            and any(flag in args for flag in ("--project", "--project-id"))
             and "--element" in args
             and "--import" in args
         )
@@ -52,6 +52,7 @@ class ProjectImportCommand(CliCommandPort):
     def __init__(self, request: CliCommandRequest):
         self._request: CliCommandRequest = request
         self._entity_adapter = IfcRuntimeEntityAdapter()
+        self._path_adapter: CliPathAdapter = CliPathAdapter()
 
     def check(self) -> bool:
         args: List[str] = list(self._request.command_args)
@@ -62,15 +63,17 @@ class ProjectImportCommand(CliCommandPort):
             args[index]: args[index + 1]
             for index in range(0, len(args), 2)
         }
-        raw_project_id: str = str(argument_pairs.get("--project-id", "")).strip()
+        raw_project_id: str = str(
+            self._request.context.get_parameter_value("project_id") or ""
+        ).strip()
         raw_element: str = str(argument_pairs.get("--element", "")).strip()
         raw_import_path: str = str(argument_pairs.get("--import", "")).strip()
         if not raw_project_id or not raw_element or not raw_import_path:
             raise CliCommandArgumentException(
-                "Usage: infobim project --project-id <project_id> --element <element_uri> --import <file_path>"
+                "Usage: infobim project --project <project_id> --element <element_uri> --import <file_path>"
             )
 
-        resolved_import_path: Path = resolve_cli_input_path(
+        resolved_import_path: Path = self._path_adapter.resolve(
             raw_import_path,
             root_path=self._request.context.root_path,
         )
