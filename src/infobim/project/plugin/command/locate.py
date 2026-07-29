@@ -13,13 +13,14 @@ class ProjectLocateElementCommand(CliCommandPort):
         arguments=[
             {
                 "accepts": [
+                    "--project",
                     "--project-id",
                     "--element",
                     "--locate-at",
                 ],
                 "valued": True,
                 "description": "Boilerplate command to locate an element class at a latitude/longitude for a project.",
-                "usage": "infobim project --project-id <project_id> --element <class_uri> --locate-at <latitude,longitude>",
+                "usage": "infobim project --project <project_id> --element <class_uri> --locate-at <latitude,longitude>",
             },
         ],
     )
@@ -31,7 +32,7 @@ class ProjectLocateElementCommand(CliCommandPort):
 
         return (
             args[0] == "project"
-            and "--project-id" in args
+            and any(flag in args for flag in ("--project", "--project-id"))
             and "--element" in args
             and "--locate-at" in args
         )
@@ -40,7 +41,10 @@ class ProjectLocateElementCommand(CliCommandPort):
         self._request: CliCommandRequest = request
 
     def check(self) -> bool:
-        project_id: Optional[str] = self._get_flag_value("--project-id")
+        project_id_value: object = self._request.context.get_parameter_value("project_id")
+        project_id: Optional[str] = (
+            str(project_id_value).strip() if project_id_value is not None else None
+        )
         element_class_uri: Optional[str] = self._get_flag_value("--element")
         located_at: Optional[str] = self._get_flag_value("--locate-at")
 
@@ -83,6 +87,7 @@ class ProjectLocateElementCommand(CliCommandPort):
             return value
 
         context_parameter_name_by_flag: Dict[str, str] = {
+            "--project": "project_id",
             "--project-id": "project_id",
             "--element": "element_class_uri",
             "--locate-at": "located_at",
