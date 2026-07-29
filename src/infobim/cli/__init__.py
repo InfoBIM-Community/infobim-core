@@ -3,8 +3,10 @@ import sys
 from typing import List
 from ontobdc.cli.domain.port.command import CliCommandPort
 from ontobdc.cli.domain.port.logger import LogRepositoryPort
+from ontobdc.cli import _check_command as ontobdc_check_command
 from ontobdc.cli import _render_response as ontobdc_render_response
 from infobim.cli.adapter.loader import ResponseAnsiInformationAdapterLoader
+from infobim.shared.adapter.loader import ParameterLoader
 from ontobdc.cli.domain.response.command import CommandResponse, ExceptionCommandResponse
 from infobim.cli.adapter.command import CliCommandRunAdapter as InfoBIMCliCommandRunAdapter
 from ontobdc.cli.adapter.logger import BaseLoggerAdapter, InLineLogger, NullLogRepository, StandardConsoleLogger
@@ -34,9 +36,15 @@ def main() -> None:
             logger = InLineLogger()
 
         cli_command_run: CliCommandPort = InfoBIMCliCommandRunAdapter.make(incoming_args, logger)
-        response: CommandResponse = cli_command_run.run()
-        if not silent:
-            _render_response(response, logger, render_type)
+        if ontobdc_check_command(
+            cli_command_run,
+            incoming_args,
+            logger,
+            parameter_loader=ParameterLoader(),
+        ):
+            response: CommandResponse = cli_command_run.run()
+            if not silent:
+                _render_response(response, logger, render_type)
 
         sys.exit(0)
 
