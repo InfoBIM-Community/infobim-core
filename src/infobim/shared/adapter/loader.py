@@ -8,6 +8,7 @@ from ontobdc.shared.adapter.capability import Capability
 from ontobdc.shared.adapter.loader import (
     CapabilityLoader as OntoBDCCapabilityLoader,
     CommandLoader as OntoBDCCommandLoader,
+    ParameterLoader as OntoBDCParameterLoader,
 )
 from ontobdc.shared.domain.model.capability import CapabilityMetadata
 from ontobdc.shared.domain.port.capability import CapabilityPort
@@ -32,6 +33,40 @@ class CommandLoader(OntoBDCCommandLoader):
             module_dir = os.path.join(infobim_root, "module")
             if os.path.isdir(module_dir):
                 discovered = self._scan_directory(resource, module_dir, "infobim.module", discovered)
+        except Exception:
+            return []
+
+        return discovered
+
+
+class ParameterLoader(OntoBDCParameterLoader):
+    """Discover InfoBIM parameter strategies."""
+
+    def _make_config_data_adapter(self) -> ConfigDataAdapter:
+        try:
+            return ConfigDataAdapter()
+        except ProjectRootDirectoryNotSetError:
+            return ConfigDataAdapter(root_dir=os.getcwd())
+
+    def _list_plugin_folder(self, resource: str) -> List[str]:
+        discovered: List[str] = []
+        infobim_root: str = str(self._make_config_data_adapter().script_dir)
+
+        try:
+            discovered = self._scan_directory(
+                resource,
+                infobim_root,
+                "infobim",
+                discovered,
+            )
+            module_dir: str = os.path.join(infobim_root, "module")
+            if os.path.isdir(module_dir):
+                discovered = self._scan_directory(
+                    resource,
+                    module_dir,
+                    "infobim.module",
+                    discovered,
+                )
         except Exception:
             return []
 
