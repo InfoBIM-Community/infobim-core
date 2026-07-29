@@ -15,10 +15,10 @@ class ProjectDetailCommand(ProjectBaseCommand):
         description="Show details for a single active InfoBIM project.",
         arguments=[
             {
-                "accepts": ["--project-id"],
+                "accepts": ["--project", "--project-id"],
                 "valued": True,
                 "description": "Show the active project matching the given project identifier.",
-                "usage": "infobim project --project-id <project_id>",
+                "usage": "infobim project --project <project_id>",
             }
         ],
     )
@@ -28,7 +28,7 @@ class ProjectDetailCommand(ProjectBaseCommand):
         return (
             len(args) == 3
             and args[0] == "project"
-            and args[1] == "--project-id"
+            and args[1] in ("--project", "--project-id")
             and bool(str(args[2]).strip())
         )
 
@@ -36,7 +36,7 @@ class ProjectDetailCommand(ProjectBaseCommand):
         self._request: CliCommandRequest = request
 
     def check(self) -> bool:
-        project_id: Optional[str] = self._get_flag_value("--project-id")
+        project_id: Optional[str] = self._get_project_id()
         if not project_id:
             return False
 
@@ -103,17 +103,7 @@ class ProjectDetailCommand(ProjectBaseCommand):
             },
         )
 
-    def _get_flag_value(self, flag_name: str) -> Optional[str]:
-        args: List[str] = list(self._request.command_args)
-        if flag_name in args:
-            index: int = args.index(flag_name)
-            if index + 1 >= len(args):
-                return None
-
-            value: str = str(args[index + 1]).strip()
-            if value:
-                return value
-
+    def _get_project_id(self) -> Optional[str]:
         context_value: object = self._request.context.get_parameter_value("project_id")
         if context_value is None:
             return None
