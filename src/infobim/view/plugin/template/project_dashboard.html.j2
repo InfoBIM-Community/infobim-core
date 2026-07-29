@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page_title }}</title>
+  <link rel="stylesheet" href="{{ asset_root }}/css/project_dashboard.css">
+</head>
+<body>
+  <main class="view-shell">
+    <section class="view-topbar">
+      <div class="view-topbar-primary">
+        {{ hero_card_html | safe }}
+        {{ dynamic_menubar_card_html | safe }}
+      </div>
+
+      {{ mini_card_grid_card_html | safe }}
+    </section>
+
+    <section class="view-grid">
+      <div class="view-column view-column-double">
+        {{ project_information_card_html | safe }}
+        {{ pyodide_runtime_card_html | safe }}
+      </div>
+
+      <div class="view-column"></div>
+
+      <div class="view-column"></div>
+    </section>
+  </main>
+
+  <script>
+    window.infoBimProjectDashboard = {{ pyodide_payload_json | safe }};
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.js"></script>
+  <script defer src="{{ asset_root }}/js/pyodide_bootstrap.js"></script>
+</body>
+</html>
