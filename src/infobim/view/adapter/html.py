@@ -2,6 +2,7 @@ import json
 import shutil
 import webbrowser
 from datetime import datetime
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any, Dict
 
@@ -155,3 +156,89 @@ class ProjectDashboardHtmlRenderer:
         weekday_name: str = self._WEEKDAY_NAMES[current_datetime.weekday()]
         month_name: str = self._MONTH_NAMES[current_datetime.month - 1]
         return f"{weekday_name}, {current_datetime.day} de {month_name} de {current_datetime.year}"
+
+
+class WorkStream5W2HHtmlRenderer(ProjectDashboardHtmlRenderer):
+    """Render a live 5W2H page backed by the project container."""
+
+    def render(self, project_data: Dict[str, Any], element_id: str) -> Path:
+        container_path = Path(str(project_data["path"])).expanduser().resolve()
+        output_dir = container_path / "payload" / "view"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_file = output_dir / f"{element_id}.html"
+        asset_output_dir = (
+            container_path
+            / self._ONTOBDC_DIR_NAME
+            / self._ASSET_ROOT_NAME
+            / self._ASSET_NAMESPACE
+        )
+        asset_output_dir.mkdir(parents=True, exist_ok=True)
+
+        self._copy_asset_directory(asset_output_dir)
+        self._copy_file_display_ontology(asset_output_dir)
+        output_file.write_text(
+            self._build_workstream_document(project_data, element_id),
+            encoding="utf-8",
+        )
+        webbrowser.open(output_file.as_uri())
+        return output_file
+
+    def _build_workstream_document(
+        self,
+        project_data: Dict[str, Any],
+        element_id: str,
+    ) -> str:
+        template = self._template_environment().get_template(
+            "workstream_5w2h.html.j2"
+        )
+        payload = {
+            "projectId": str(project_data.get("project_id", "")).strip(),
+            "projectName": str(project_data.get("name", "")).strip(),
+            "elementId": element_id,
+            "entity": "WorkStream",
+            "workstreamUri": f"urn:infobim:workstream/{element_id}",
+            "dimensionBaseUri": (
+                f"urn:infobim:workstream/{element_id}/dimension"
+            ),
+            "datapackagePath": ".__ontobdc__/datapackage.json",
+            "linksetPath": ".__ontobdc__/linkset/WorkStream.ttl",
+            "resourceLinksetPath": (
+                ".__ontobdc__/linkset/WorkStreamResource.ttl"
+            ),
+            "roCratePath": ".__ontobdc__/ro-crate-metadata.json",
+            "fileDisplayOntologyPath": (
+                ".__ontobdc__/asset/infobim-view/ontology/file_display.ttl"
+            ),
+        }
+        return template.render(
+            page_title="InfoBIM WorkStream 5W2H",
+            asset_root="../../.__ontobdc__/asset/infobim-view",
+            project_title=payload["projectName"],
+            workstream_payload_json=json.dumps(
+                payload,
+                ensure_ascii=False,
+                indent=2,
+            ),
+        )
+
+    def _copy_file_display_ontology(self, asset_output_dir: Path) -> None:
+        loader_spec = find_spec("ontobdc.view.adapter.loader")
+        if loader_spec is None or loader_spec.origin is None:
+            raise FileNotFoundError(
+                "Could not locate the installed OntoBDC package."
+            )
+        ontobdc_view_dir = Path(loader_spec.origin).resolve().parents[1]
+        source_path = (
+            ontobdc_view_dir
+            / "plugin"
+            / "ontology"
+            / "file_display.ttl"
+        )
+        if not source_path.is_file():
+            raise FileNotFoundError(
+                f"OntoBDC file display ontology was not found: {source_path}"
+            )
+
+        target_path = asset_output_dir / "ontology" / source_path.name
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_path, target_path)
