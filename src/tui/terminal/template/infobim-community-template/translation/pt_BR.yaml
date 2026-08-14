@@ -1,9 +1,0 @@
-exit:
-  label: "Sair"
-  thank_you: "Obrigado por escolher o InfoBIM!"
-exception:
-  message:
-    ifc_engine_not_found: "O motor de IFC não foi encontrado. Vamos configurá-lo."
-spinner:
-  ifc:
-    search_files: "Buscando todos os arquivos IFC em"

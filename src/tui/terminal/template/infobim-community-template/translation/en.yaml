@@ -1,9 +1,0 @@
-exit:
-  label: "Exit"
-  thank_you: "Thank you for choosing InfoBIM!"
-exception:
-  message:
-    ifc_engine_not_found: "IFC engine not found. Let's set it up."
-spinner:
-  ifc:
-    search_files: "Searching all IFC files in"
