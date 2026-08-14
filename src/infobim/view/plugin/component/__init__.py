@@ -1,0 +1,2 @@
+"""BIM-specific component descriptors."""
+

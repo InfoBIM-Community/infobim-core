@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "infobim"
+authors = [
+    { name = "Elias Magalhães", email = "elias@brasidata.com" }
+]
+version = "0.5.0"
+description = "InfoBIM"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "ontobdc>=0.14.0",
+    "ontobdc-view>=0.1.0",
+    "openpyxl>=3.1",
+]
+
+[project.scripts]
+infobim = "infobim.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["infobim*"]
+
+[tool.setuptools.package-data]
+infobim = [
+    "context/ontology/*.ttl",
+    "view/plugin/asset/js/*.js",
+]

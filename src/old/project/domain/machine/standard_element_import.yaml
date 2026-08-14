@@ -1,0 +1,129 @@
+statechart:
+  name: StandardElementImport
+  description: "Statechart for project element import artifact observation."
+
+  root state:
+    name: standard_element_import
+    initial: undefined
+
+    states:
+      - name: undefined
+        description: "Initial state before any import artifact is available."
+        transitions:
+          - target: updated
+            guard: handler.can_transit_to(to_state = ElementImportProcessState.UPDATED)
+            action: handler.perform_state_transition(to_state = ElementImportProcessState.UPDATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementImportProcessState.UNDEFINED, to_state = ElementImportProcessState.UPDATED)
+
+      - name: updated
+        description: "The target project container is updated and synchronized."
+        transitions:
+          - target: identified
+            guard: handler.can_transit_to(to_state = ElementImportProcessState.IDENTIFIED)
+            action: handler.perform_state_transition(to_state = ElementImportProcessState.IDENTIFIED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementImportProcessState.UPDATED, to_state = ElementImportProcessState.IDENTIFIED)
+
+      - name: identified
+        description: "The __identified__.json artifact is available."
+        transitions:
+          - target: extracted
+            guard: handler.can_transit_to(to_state = ElementImportProcessState.EXTRACTED)
+            action: handler.perform_state_transition(to_state = ElementImportProcessState.EXTRACTED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementImportProcessState.IDENTIFIED, to_state = ElementImportProcessState.EXTRACTED)
+
+      - name: extracted
+        description: "The __extracted__.md artifact is available."
+        transitions:
+          - target: spatialized
+            guard: handler.can_transit_to(to_state = ElementImportProcessState.SPATIALIZED)
+            action: handler.perform_state_transition(to_state = ElementImportProcessState.SPATIALIZED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementImportProcessState.EXTRACTED, to_state = ElementImportProcessState.SPATIALIZED)
+
+      - name: spatialized
+        description: "The __spatialized__.json artifact is available."
+        transitions:
+          - target: localized
+            guard: handler.can_transit_to(to_state = ElementImportProcessState.LOCALIZED)
+            action: handler.perform_state_transition(to_state = ElementImportProcessState.LOCALIZED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementImportProcessState.SPATIALIZED, to_state = ElementImportProcessState.LOCALIZED)
+
+      - name: localized
+        description: "The __localized__.json artifact is available."
+        transitions:
+          - target: arranged
+            guard: handler.can_transit_to(to_state = ElementImportProcessState.ARRANGED)
+            action: handler.perform_state_transition(to_state = ElementImportProcessState.ARRANGED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementImportProcessState.LOCALIZED, to_state = ElementImportProcessState.ARRANGED)
+
+      - name: arranged
+        description: "The __arranged__.json artifact is available."
+        transitions:
+          - target: grounded
+            guard: handler.can_transit_to(to_state = ElementImportProcessState.GROUNDED)
+            action: handler.perform_state_transition(to_state = ElementImportProcessState.GROUNDED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementImportProcessState.ARRANGED, to_state = ElementImportProcessState.GROUNDED)
+
+      - name: grounded
+        description: "The __grounded__.json artifact is available."
+        transitions:
+          - target: semanticized
+            guard: handler.can_transit_to(to_state = ElementImportProcessState.SEMANTICIZED)
+            action: handler.perform_state_transition(to_state = ElementImportProcessState.SEMANTICIZED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementImportProcessState.GROUNDED, to_state = ElementImportProcessState.SEMANTICIZED)
+
+      - name: semanticized
+        description: "The __semanticized__.json artifact is available."
+        transitions:
+          - target: instance_drafted
+            guard: handler.can_transit_to(to_state = ElementImportProcessState.INSTANCE_DRAFTED)
+            action: handler.perform_state_transition(to_state = ElementImportProcessState.INSTANCE_DRAFTED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementImportProcessState.SEMANTICIZED, to_state = ElementImportProcessState.INSTANCE_DRAFTED)
+
+      - name: instance_drafted
+        description: "The __instance_drafted__.json artifact is available."
+        transitions:
+          - target: instance_parsed
+            guard: handler.can_transit_to(to_state = ElementImportProcessState.INSTANCE_PARSED)
+            action: handler.perform_state_transition(to_state = ElementImportProcessState.INSTANCE_PARSED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementImportProcessState.INSTANCE_DRAFTED, to_state = ElementImportProcessState.INSTANCE_PARSED)
+
+      - name: instance_parsed
+        description: "The __instance_parsed__.json artifact is available."
+        transitions:
+          - target: instantiated
+            guard: handler.can_transit_to(to_state = ElementImportProcessState.INSTANTIATED)
+            action: handler.perform_state_transition(to_state = ElementImportProcessState.INSTANTIATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementImportProcessState.INSTANCE_PARSED, to_state = ElementImportProcessState.INSTANTIATED)
+
+      - name: instantiated
+        description: "The __instantiated__.json artifact is available."
+        transitions:
+          - target: generated
+            guard: handler.can_transit_to(to_state = ElementImportProcessState.GENERATED)
+            action: handler.perform_state_transition(to_state = ElementImportProcessState.GENERATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementImportProcessState.INSTANTIATED, to_state = ElementImportProcessState.GENERATED)
+
+      - name: generated
+        description: "The __generated__.json artifact is available."
+        transitions:
+          - target: linked
+            guard: handler.can_transit_to(to_state = ElementImportProcessState.LINKED)
+            action: handler.perform_state_transition(to_state = ElementImportProcessState.LINKED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementImportProcessState.GENERATED, to_state = ElementImportProcessState.LINKED)
+
+      - name: linked
+        description: "The __linked__.json artifact is available."
+        type: final

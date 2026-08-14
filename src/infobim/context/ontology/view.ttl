@@ -1,0 +1,52 @@
+@prefix ibim: <https://infobim.org/ontology/ns#> .
+@prefix ifcowl: <https://standards.buildingsmart.org/IFC/DEV/IFC4_3/OWL#> .
+@prefix schema: <https://schema.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ibim:DefaultIfcWorkScheduleFacade
+    ibim:targetsClass ibim:IfcWorkSchedule ;
+    ibim:hasFacadeField
+        ibim:IfcWorkScheduleGlobalIdField,
+        ibim:IfcWorkScheduleNameField,
+        ibim:IfcWorkScheduleDescriptionField,
+        ibim:IfcWorkScheduleObjectTypeField,
+        ibim:IfcWorkScheduleIdentificationField,
+        ibim:IfcWorkScheduleCreationDateField,
+        ibim:IfcWorkScheduleCreatorsField,
+        ibim:IfcWorkSchedulePurposeField,
+        ibim:IfcWorkScheduleDurationField,
+        ibim:IfcWorkScheduleTotalFloatField,
+        ibim:IfcWorkScheduleStartTimeField,
+        ibim:IfcWorkScheduleFinishTimeField,
+        ibim:IfcWorkSchedulePredefinedTypeField .
+
+ibim:IfcWorkScheduleGlobalIdField schema:identifier "GlobalId" ; ibim:fieldOrder 10 ; ibim:fieldDatatype xsd:string ; ibim:isIdentifierField true .
+ibim:IfcWorkScheduleNameField schema:identifier "Name" ; ibim:fieldOrder 20 ; ibim:fieldDatatype xsd:string .
+ibim:IfcWorkScheduleDescriptionField schema:identifier "Description" ; ibim:fieldOrder 30 ; ibim:fieldDatatype xsd:string .
+ibim:IfcWorkScheduleObjectTypeField schema:identifier "ObjectType" ; ibim:fieldOrder 40 ; ibim:fieldDatatype xsd:string .
+ibim:IfcWorkScheduleIdentificationField schema:identifier "Identification" ; ibim:fieldOrder 50 ; ibim:fieldDatatype xsd:string .
+ibim:IfcWorkScheduleCreationDateField schema:identifier "CreationDate" ; ibim:fieldOrder 60 ; ibim:fieldDatatype xsd:dateTime .
+ibim:IfcWorkScheduleCreatorsField schema:identifier "Creators" ; ibim:fieldOrder 70 ; ibim:fieldDatatype xsd:string .
+ibim:IfcWorkSchedulePurposeField schema:identifier "Purpose" ; ibim:fieldOrder 80 ; ibim:fieldDatatype xsd:string .
+ibim:IfcWorkScheduleDurationField schema:identifier "Duration" ; ibim:fieldOrder 90 ; ibim:fieldDatatype xsd:duration .
+ibim:IfcWorkScheduleTotalFloatField schema:identifier "TotalFloat" ; ibim:fieldOrder 100 ; ibim:fieldDatatype xsd:duration .
+ibim:IfcWorkScheduleStartTimeField schema:identifier "StartTime" ; ibim:fieldOrder 110 ; ibim:fieldDatatype xsd:dateTime .
+ibim:IfcWorkScheduleFinishTimeField schema:identifier "FinishTime" ; ibim:fieldOrder 120 ; ibim:fieldDatatype xsd:dateTime .
+ibim:IfcWorkSchedulePredefinedTypeField schema:identifier "PredefinedType" ; ibim:fieldOrder 130 ; ibim:fieldDatatype xsd:string .
+
+ibim:DefaultIfcTaskFacade
+    ibim:targetsClass ifcowl:IfcTask ;
+    ibim:hasFacadeField ibim:IfcTaskGlobalIdField, ibim:IfcTaskNameField, ibim:IfcTaskIdentificationField .
+
+ibim:IfcTaskGlobalIdField schema:identifier "GlobalId" ; ibim:fieldOrder 10 ; ibim:fieldDatatype xsd:string ; ibim:isIdentifierField true .
+ibim:IfcTaskNameField schema:identifier "Name" ; ibim:fieldOrder 20 ; ibim:fieldDatatype xsd:string .
+ibim:IfcTaskIdentificationField schema:identifier "Identification" ; ibim:fieldOrder 30 ; ibim:fieldDatatype xsd:string .
+
+ibim:DefaultIfcTaskTimeFacade
+    ibim:targetsClass ifcowl:IfcTaskTime ;
+    ibim:hasFacadeField ibim:IfcTaskTimeGlobalIdField, ibim:IfcTaskTimeNameField, ibim:IfcTaskTimeScheduleStartField, ibim:IfcTaskTimeScheduleFinishField .
+
+ibim:IfcTaskTimeGlobalIdField schema:identifier "GlobalId" ; ibim:fieldOrder 10 ; ibim:fieldDatatype xsd:string ; ibim:isIdentifierField true .
+ibim:IfcTaskTimeNameField schema:identifier "Name" ; ibim:fieldOrder 20 ; ibim:fieldDatatype xsd:string .
+ibim:IfcTaskTimeScheduleStartField schema:identifier "ScheduleStart" ; ibim:fieldOrder 30 ; ibim:fieldDatatype xsd:dateTime .
+ibim:IfcTaskTimeScheduleFinishField schema:identifier "ScheduleFinish" ; ibim:fieldOrder 40 ; ibim:fieldDatatype xsd:dateTime .

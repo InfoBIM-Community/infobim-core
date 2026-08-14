@@ -1,0 +1,66 @@
+statechart:
+  name: StandardInfoBIMProjectCreate
+  description: "Create an InfoBIM project as an OntoBDC container with a reserved project EntityDataset and one IfcProject instance."
+
+  root state:
+    name: standard_infobim_project_create
+    initial: undefined
+
+    states:
+      - name: undefined
+        description: "Initial state before the target path is classified."
+        transitions:
+          - target: invalid_path
+            guard: handler.can_transit_to(to_state = ProjectCreateProcessState.INVALID_PATH)
+            action: handler.perform_state_transition(to_state = ProjectCreateProcessState.INVALID_PATH)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectCreateProcessState.UNDEFINED, to_state = ProjectCreateProcessState.INVALID_PATH)
+          - target: ontobdc_container_ready
+            guard: handler.can_transit_to(to_state = ProjectCreateProcessState.ONTOBDC_CONTAINER_READY)
+            action: handler.perform_state_transition(to_state = ProjectCreateProcessState.ONTOBDC_CONTAINER_READY)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectCreateProcessState.UNDEFINED, to_state = ProjectCreateProcessState.ONTOBDC_CONTAINER_READY)
+
+      - name: invalid_path
+        description: "The target path cannot become an InfoBIM project."
+        type: final
+
+      - name: ontobdc_container_ready
+        description: "The target path is a ready OntoBDC container."
+        transitions:
+          - target: project_dataset_ready
+            guard: handler.can_transit_to(to_state = ProjectCreateProcessState.PROJECT_DATASET_READY)
+            action: handler.perform_state_transition(to_state = ProjectCreateProcessState.PROJECT_DATASET_READY)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectCreateProcessState.ONTOBDC_CONTAINER_READY, to_state = ProjectCreateProcessState.PROJECT_DATASET_READY)
+
+      - name: project_dataset_ready
+        description: "The container contains the reserved .__infobim__ EntityDataset."
+        transitions:
+          - target: ifc_project_facade_ready
+            guard: handler.can_transit_to(to_state = ProjectCreateProcessState.IFC_PROJECT_FACADE_READY)
+            action: handler.perform_state_transition(to_state = ProjectCreateProcessState.IFC_PROJECT_FACADE_READY)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectCreateProcessState.PROJECT_DATASET_READY, to_state = ProjectCreateProcessState.IFC_PROJECT_FACADE_READY)
+
+      - name: ifc_project_facade_ready
+        description: "The project dataset contains the InfoBIM facade for ifcOWL:IfcProject."
+        transitions:
+          - target: ifc_project_ready
+            guard: handler.can_transit_to(to_state = ProjectCreateProcessState.IFC_PROJECT_READY)
+            action: handler.perform_state_transition(to_state = ProjectCreateProcessState.IFC_PROJECT_READY)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectCreateProcessState.IFC_PROJECT_FACADE_READY, to_state = ProjectCreateProcessState.IFC_PROJECT_READY)
+
+      - name: ifc_project_ready
+        description: "The project dataset contains one editable IfcProject instance backed by an XLSX resource."
+        transitions:
+          - target: project_ready
+            guard: handler.can_transit_to(to_state = ProjectCreateProcessState.PROJECT_READY)
+            action: handler.perform_state_transition(to_state = ProjectCreateProcessState.PROJECT_READY)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectCreateProcessState.IFC_PROJECT_READY, to_state = ProjectCreateProcessState.PROJECT_READY)
+
+      - name: project_ready
+        description: "The OntoBDC container satisfies the complete InfoBIM project contract."
+        type: final

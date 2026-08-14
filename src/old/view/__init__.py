@@ -1,0 +1,3 @@
+"""
+InfoBIM HTML view module.
+"""
