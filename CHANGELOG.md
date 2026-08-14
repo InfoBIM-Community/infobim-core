@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.1
+
+### Fixed
+
+- `pyproject.toml`'s `[tool.setuptools.package-data]` only listed `*.ttl` and `*.js` globs, so the published 0.5.0 wheel never shipped `project/domain/machine/standard_project_create.yaml`. Every `infobim project --create` run from a `pip install infobim` install failed with `FileNotFoundError` trying to load that statechart. Added a `**/*.yaml` glob so all packaged YAML — this file today, any future one automatically — ships with the wheel.
+
 ## Unreleased — v0.5
 
 ### Added

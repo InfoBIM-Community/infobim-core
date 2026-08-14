@@ -7,7 +7,7 @@ name = "infobim"
 authors = [
     { name = "Elias Magalhães", email = "elias@brasidata.com" }
 ]
-version = "0.5.0"
+version = "0.5.1"
 description = "InfoBIM"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -31,4 +31,5 @@ include = ["infobim*"]
 infobim = [
     "context/ontology/*.ttl",
     "view/plugin/asset/js/*.js",
+    "**/*.yaml",
 ]

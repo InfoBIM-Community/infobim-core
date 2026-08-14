@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page_title }}</title>
+  <link rel="stylesheet" href="{{ asset_root }}/css/project_dashboard.css?v=20260801-annotation-visual-1">
+  <link rel="stylesheet" href="{{ asset_root }}/css/annotation_visual.css?v=20260801-annotation-visual-1">
+  <link rel="stylesheet" href="{{ asset_root }}/css/ontobdc/annotation/annotation_editor.css?v=20260801-typed-editor-1">
+  <link rel="stylesheet" href="{{ asset_root }}/css/ontobdc/annotation/annotation_workspace.css?v=20260801-annotation-workspace-1">
+</head>
+<body>
+  <main class="view-shell">
+    <section class="view-hero-card five-w-two-h-hero">
+      <div class="view-brand">
+        <img class="view-brand-logo" src="{{ asset_root }}/logo.png" alt="InfoBIM">
+        <div class="view-brand-copy">
+          <span class="view-eyebrow">InfoBIM WorkStream</span>
+          <span class="view-eyebrow-meta" id="project-title">{{ project_title }}</span>
+        </div>
+      </div>
+
+      <h1 id="workstream-name">5W2H</h1>
+      <p id="workstream-description">
+        Abra o projeto para carregar os dados vivos desta frente de trabalho.
+      </p>
+    </section>
+
+    <section class="workstream-status-bar" aria-live="polite">
+      <div class="container-access-actions">
+        <div class="workstream-status">
+          <span class="runtime-dot" id="container-status-dot" aria-hidden="true"></span>
+          <span id="container-status">Não carregado</span>
+        </div>
+        <button
+          class="project-update-button"
+          id="update-project"
+          type="button"
+          aria-label="Atualizar arquivos do projeto"
+          title="Atualizar arquivos do projeto"
+          disabled
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5"></path>
+            <path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"></path>
+          </svg>
+          <span>Atualizar</span>
+        </button>
+        <button class="project-update-button" id="open-annotation-workspace" type="button" disabled>Anotações</button>
+        <button class="project-update-button" id="open-subject-page" type="button" disabled>Assuntos</button>
+        <button class="container-open-button" id="open-container" type="button">
+          Abrir projeto
+        </button>
+      </div>
+    </section>
+
+    <section class="five-w-two-h-layout" aria-label="5W2H">
+      {% for key, dimension_slug, symbol, label, question in (
+        ("What", "what", "W", "What", "O que será executado?"),
+        ("Why", "why", "W", "Why", "Por que será executado?"),
+        ("Where", "where", "W", "Where", "Onde será executado?"),
+        ("When", "when", "W", "When", "Quando será executado?"),
+        ("Who", "who", "W", "Who", "Quem está envolvido?"),
+        ("How", "how", "H", "How", "Como será executado?"),
+        ("HowMuch", "how-much", "H", "How much", "Quanto será necessário?")
+      ) %}
+        <article
+          class="five-w-two-h-row"
+          id="{{ key | lower }}"
+          data-dimension="{{ dimension_slug }}"
+        >
+          <header class="view-badge five-w-two-h-marker" aria-label="{{ label }}">
+            <span class="five-w-two-h-symbol">{{ symbol }}</span>
+            <span class="five-w-two-h-label">{{ label }}</span>
+          </header>
+          <div class="view-panel five-w-two-h-content">
+            <div class="view-panel-head">
+              <h2 class="view-panel-title">{{ question }}</h2>
+            </div>
+            <div class="view-panel-body five-w-two-h-body">
+              <div class="five-w-two-h-value" data-field="{{ key }}">—</div>
+            </div>
+          </div>
+          <nav
+            class="view-badge workstream-resource-links"
+            aria-label="Recursos de {{ label }}"
+          >
+            {% for resource_key, resource_label in (
+              ("drawings", "Pranchas"),
+              ("documents", "Documentos"),
+              ("messages", "Comunicação"),
+              ("photos", "Fotos")
+            ) %}
+              <button
+                class="workstream-resource-link"
+                type="button"
+                data-resource-toggle="{{ resource_key }}"
+                aria-expanded="false"
+                aria-controls="{{ key | lower }}-resource-panel"
+              >
+                {{ resource_label }}
+              </button>
+            {% endfor %}
+          </nav>
+          <section
+            class="view-panel workstream-resource-panel"
+            id="{{ key | lower }}-resource-panel"
+            data-resource-panel
+            hidden
+          >
+            <div class="workstream-resource-tree">
+              <div class="workstream-resource-section-head">
+                <span>Árvore</span>
+                <div class="workstream-tree-heading">
+                  <strong data-resource-title>Recursos</strong>
+                  <div class="workstream-tree-toolbar" aria-label="Controles da árvore">
+                    <button
+                      class="workstream-tree-action"
+                      type="button"
+                      data-tree-action="collapse"
+                      aria-label="Recolher tudo"
+                      title="Recolher tudo"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m7 10 5 5 5-5"></path>
+                        <path d="M5 6h14"></path>
+                      </svg>
+                    </button>
+                    <button
+                      class="workstream-tree-action"
+                      type="button"
+                      data-tree-action="expand"
+                      aria-label="Expandir tudo"
+                      title="Expandir tudo"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m7 14 5-5 5 5"></path>
+                        <path d="M5 18h14"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="workstream-resource-tabs"
+                role="tablist"
+                aria-label="Visões de recursos de {{ label }}"
+              >
+                {% for view_key, view_label in (
+                  ("related", "Relacionadas"),
+                  ("suggested", "Sugeridas"),
+                  ("found", "Encontradas")
+                ) %}
+                  <button
+                    class="workstream-resource-tab{% if view_key == 'related' %} is-active{% endif %}"
+                    id="{{ key | lower }}-{{ view_key }}-tab"
+                    type="button"
+                    role="tab"
+                    data-resource-view="{{ view_key }}"
+                    aria-selected="{% if view_key == 'related' %}true{% else %}false{% endif %}"
+                    aria-controls="{{ key | lower }}-tree"
+                    tabindex="{% if view_key == 'related' %}0{% else %}-1{% endif %}"
+                  >
+                    {{ view_label }}
+                  </button>
+                {% endfor %}
+              </div>
+              <div
+                class="workstream-file-tree"
+                id="{{ key | lower }}-tree"
+                role="tabpanel"
+                aria-labelledby="{{ key | lower }}-related-tab"
+                data-file-tree
+              >
+                <p class="workstream-resource-empty">
+                  Nenhum arquivo relacionado.
+                </p>
+              </div>
+            </div>
+            <div class="workstream-resource-preview">
+              <div class="workstream-resource-section-head">
+                <span>Visualização</span>
+                <div class="workstream-resource-preview-heading">
+                  <strong data-resource-preview-title>Selecione um arquivo</strong>
+                  <button
+                    class="workstream-relation-action"
+                    type="button"
+                    data-relation-action
+                    aria-label="Relacionar arquivo"
+                    title="Relacionar arquivo"
+                    hidden
+                  ></button>
+                </div>
+              </div>
+              <nav
+                class="workstream-preview-toolbar"
+                data-preview-toolbar
+                aria-label="Comandos da visualização"
+                hidden
+              >
+                <button
+                  class="workstream-preview-toolbar-action"
+                  type="button"
+                  data-fullscreen-action
+                  aria-label="Abrir em tela cheia"
+                  title="Abrir em tela cheia"
+                >
+                  Tela cheia
+                </button>
+                <button
+                  class="workstream-preview-toolbar-action is-active"
+                  type="button"
+                  data-document-mode-action
+                  aria-label="Voltar à visualização inicial"
+                  title="Voltar à visualização inicial"
+                  aria-pressed="true"
+                >
+                  Início
+                </button>
+                <button
+                  class="workstream-preview-toolbar-action"
+                  type="button"
+                  data-annotations-mode-action
+                  aria-label="Exibir anotações"
+                  title="Exibir anotações"
+                  aria-pressed="false"
+                  disabled
+                >
+                  Anotações
+                </button>
+                <button
+                  class="workstream-preview-toolbar-action"
+                  type="button"
+                  data-annotation-action
+                  aria-label="Anotar arquivo"
+                  title="Anotar arquivo"
+                  disabled
+                >
+                  Anotar
+                </button>
+                <button
+                  class="workstream-preview-toolbar-action"
+                  type="button"
+                  data-propagate-action
+                  aria-label="Relacionar à próxima dimensão"
+                  title="Selecione um arquivo."
+                  disabled
+                >
+                  Relacionar à próxima
+                </button>
+              </nav>
+              <div class="workstream-file-preview" data-file-preview>
+                <p class="workstream-resource-empty">
+                  Selecione um arquivo.
+                </p>
+              </div>
+            </div>
+          </section>
+        </article>
+      {% endfor %}
+    </section>
+    <dialog id="annotation-query-dialog" class="annotation-query-dialog">
+      <button type="button" data-close-query aria-label="Fechar">×</button>
+      <div id="annotation-query-host"></div>
+    </dialog>
+  </main>
+
+  <script>
+    window.ontoBDCWorkStreamView = {{ workstream_payload_json | safe }};
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.js"></script>
+  <script defer src="{{ asset_root }}/js/email_reader.js"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/workstream/workstream_context.js?v=20260801-annotation-visual-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_model.js?v=20260801-annotation-visual-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_lifecycle.js?v=20260801-annotation-workspace-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_entity_resolver.js?v=20260801-annotation-workspace-2"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_persistence.js?v=20260801-annotation-workspace-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_visual_contract.js?v=20260801-annotation-visual-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_visual_resolver.js?v=20260801-annotation-visual-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_store.js?v=20260801-annotation-visual-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_surface.js?v=20260801-annotation-visual-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_renderer.js?v=20260801-annotation-visual-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_field_factory.js?v=20260801-typed-editor-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_form_registry.js?v=20260801-typed-editor-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_geometry_controller.js?v=20260801-typed-editor-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_editor.js?v=20260801-typed-editor-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_workspace.js?v=20260801-annotation-workspace-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_subject_page.js?v=20260801-annotation-workspace-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/annotation/annotation_runtime.js?v=20260801-typed-editor-1"></script>
+  <script defer src="{{ asset_root }}/js/annotation_bim_resolver.js?v=20260801-annotation-workspace-2"></script>
+  <script defer src="{{ asset_root }}/js/annotation_presentation.js?v=20260801-annotation-visual-1"></script>
+  <script defer src="{{ asset_root }}/js/ontobdc/workstream/workstream_annotations.js?v=20260801-annotation-visual-1"></script>
+  <script defer src="{{ asset_root }}/js/workstream_5w2h.js?v=20260801-annotation-visual-1"></script>
+  <script defer src="{{ asset_root }}/js/annotation_query_integration.js?v=20260801-annotation-workspace-1"></script>
+</body>
+</html>

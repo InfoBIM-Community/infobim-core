@@ -1,0 +1,3 @@
+"""
+View command plugins.
+"""
