@@ -1,0 +1,10 @@
+id: infobim-community-tui
+name: "Default InfoBIM Community Template"
+description: "Default template for InfoBIM Community"
+languages:
+  - en:
+    name: "English"
+    description: "English version of the template"
+  - pt_BR:
+    name: "Português Brasileiro"
+    description: "Versão em português do Brasil template para InfoBIM Community"

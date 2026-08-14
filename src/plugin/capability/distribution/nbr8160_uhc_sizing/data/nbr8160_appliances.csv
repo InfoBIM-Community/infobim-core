@@ -1,0 +1,19 @@
+appliance,detail,uhc,min_dn
+Bacia sanitária,,6,100
+Banheira de residência,,2,40
+Bebedouro,,0.5,40
+Bidê,,1,40
+Chuveiro,De residência,2,40
+Chuveiro,Coletivo,4,40
+Lavatório,De residência,1,40
+Lavatório,De uso geral,2,40
+Mictório,Válvula de descarga,6,75
+Mictório,Caixa de descarga,5,50
+Mictório,Descarga automática,2,40
+Mictório,De calha,2,50
+Pia de cozinha residencial,,3,50
+Pia de cozinha industrial,Preparação,3,50
+Pia de cozinha industrial,Lavagem de panelas,4,50
+Tanque de lavar roupas,,3,40
+Máquina de lavar louças,,2,50
+Máquina de lavar roupas,,3,50

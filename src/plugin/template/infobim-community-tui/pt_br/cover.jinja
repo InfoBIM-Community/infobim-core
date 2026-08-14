@@ -1,0 +1,16 @@
+---
+hide:
+  - toc
+---
+
+# <div style="text-align: center;">{{ organization::web::name }}</div>
+
+<div style="text-align: center; border: 0px solid #cdcdcd; background-color: #706f6fff; padding: 24px; margin-top: 72px; margin-bottom: 72px;">
+
+{{ project::web::name }}
+
+</div>
+
+### <div style="text-align: center; margin-top: 72px; margin-bottom: 72px;">{{ (asset::site[0]::location::city::name)::upper }} - {{ asset::site[0]::location::state::shortenedCode }}</div>
+
+### <div style="text-align: center; margin-top: 72px; margin-bottom: 72px;">{{ ((project::month)::name)::upper }} - {{ project::year }}</div>

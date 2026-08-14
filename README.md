@@ -76,7 +76,12 @@ Capabilities are the core of InfoBIM. They define the actions that can be perfor
 
 For this reason, only capabilities whose required parameters are satisfied are shown in the runtime menu. When you run:
 ```bash
+<<<<<<< HEAD
+# List all sewage pipes (validating against NBR 8160)
+./infobim run org.infobim.base.capability.list_sewage_pipes --ifc_path ./data/my_project.ifc
+=======
 infobim run
+>>>>>>> bkp/triage
 ```
 
 Interactive mode (terminal menu) shows a UI to select an available capability. Most InfoBIM capabilities require an IFC file path, so you will usually pass `--ifc-path` when running by ID.
@@ -117,7 +122,22 @@ A **Capability** is the atomic unit of work in InfoBIM. It wraps your Python scr
 2.  **Schema**: Formal definition of Inputs (arguments) and Outputs (return data).
 3.  **Docs**: Embedded documentation for both humans and LLMs.
 
+<<<<<<< HEAD
+### Included Capabilities
+
+| ID | Description |
+|----|-------------|
+| `infobim.capability.list_pipes` | Extracts pipe segments with geometry (Length, Z-coordinates) and properties. |
+| `org.infobim.base.capability.list_sewage_pipes` | Specialized extraction for Sewage systems. Calculates **Real Slope** vs **Minimum Slope (NBR 8160)**. |
+
+---
+
+## 🏗️ Architecture
+
+InfoBIM IFC is designed to be the "Operating System" for your BIM scripts.
+=======
 Thus, InfoBIM IFC acts as a lightweight runtime layer for BIM automation, turning scripts into discoverable and repeatable capabilities.
+>>>>>>> bkp/triage
 
 *   **Runtime**: Handles the environment (Python, Docker, IFCOpenShell).
 *   **Registry**: Discovers and registers available Capabilities.

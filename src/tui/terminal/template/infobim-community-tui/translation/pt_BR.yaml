@@ -1,0 +1,60 @@
+exit:
+  label: "Sair"
+  thank_you: "Obrigado por escolher o InfoBIM!"
+exception:
+  message:
+    ifc_engine_not_found: "O motor de IFC não foi encontrado. Vamos configurá-lo."
+spinner:
+  ifc:
+    search_files: "Buscando todos os arquivos IFC em"
+  narrative:
+    search_files: "Buscando todos os arquivos IFC em"
+basis_of_design:
+  label: "Memorial Descritivo"
+  cover:
+    label: "Capa"
+  introduction:
+    title: "Introdução"
+    institution_characterization: "Caracterização da Instituição"
+    technical_intervention_scope: "Escopo da Intervenção Técnica"
+    services_execution: "Execução dos Serviços"
+  methodology:
+    title: "Metodologia de Mapeamento e Diagnóstico"
+    services_execution: "Execução dos Serviços"
+    risk_classification_criteria_criticality: "Critérios de Classificação de Risco (Criticidade)"
+  technical_results:
+    title: "Resultados do Diagnóstico Técnico"
+    effluent_cross_connection_environmental_risk: "Cruzamento de Efluentes (Risco Ambiental)"
+  objectives:
+    title: "Objetivos"
+    general_objective: "Objetivo Geral"
+    conceptual_project_specific_objectives: "Objetivos Específicos do Projeto Conceitual"
+  technical_guidelines:
+    title: "Diretrizes Técnicas"
+    technical_guidelines: "Diretrizes Técnicas"
+    introduction: "Introdução"
+    brazilian_standards_abnt: "Principais Normas Brasileiras (ABNT)"
+    hydraulic_sizing_criteria: "Critérios de Dimensionamento Hidráulico"
+    construction_execution_criteria: "Critérios Construtivos e de Execução"
+    tests_and_system_acceptance: "Testes e Aceitação do Sistema"
+    systems_and_components_included: "Sistemas e Componentes Incluídos"
+    bim_and_data_management_guidelines: "Diretrizes Relacionadas ao BIM e Gerenciamento de Dados Técnicos"
+  proposed_solution:
+    title: "Solução Proposta"
+    proposed_solution: "Solução Proposta"
+  pipe_sizing:
+    title: "Dimensionamento das Tubulações"
+    pipe_sizing: "Dimensionamento das Tubulações"
+months:
+  1: "janeiro"
+  2: "fevereiro"
+  3: "março"
+  4: "abril"
+  5: "maio"
+  6: "junho"
+  7: "julho"
+  8: "agosto"
+  9: "setembro"
+  10: "outubro"
+  11: "novembro"
+  12: "dezembro"
