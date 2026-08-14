@@ -35,6 +35,32 @@ infobim project --update
 infobim view
 ```
 
+> **`--create <path>` takes a literal filesystem path, not a project name.**
+> It is resolved and used directly — InfoBIM never nests a new subfolder
+> underneath it on your behalf. This matters in two ways:
+>
+> - **Pointing it at an existing folder adopts that folder in place.** Every
+>   internal folder-creation step is idempotent (`mkdir(..., exist_ok=True)`),
+>   so re-running `--create` against a folder that's already a Project (or
+>   partway there) is safe and simply resumes/completes it — it will not fail
+>   or duplicate anything. To use the folder you're already standing in:
+>   ```bash
+>   infobim project --create .
+>   ```
+> - **A bare relative name is still a path**, resolved against your current
+>   directory — it is *not* a display name. Running
+>   `infobim project --create "My Project"` while already inside
+>   `.../Some Existing Folder/` creates a **new subfolder**
+>   `.../Some Existing Folder/My Project/`, one level deeper than you're
+>   probably expecting, instead of using the folder you're in. If that's not
+>   what you want, pass `.` (see above) or an absolute path to the exact
+>   folder you mean.
+>
+> The Project's display name is derived from the **target folder's own
+> basename** — there is currently no separate `--name`/title argument
+> independent of the path. If you want a specific display name, name (or
+> rename) the folder accordingly before running `--create`.
+
 ---
 
 ## Core InfoBIM concepts
@@ -174,7 +200,7 @@ is cataloged in
 |---|---|
 | Initialize workspace | `infobim init` |
 | Check which version is active | `infobim --version` \| `-v` |
-| Create a new empty Project | `infobim project --create <abs/or/rel/path>` |
+| Create a new empty Project — `<path>` is a literal filesystem path, not a name; `.` adopts the current directory (see Quickstart note above) | `infobim project --create <abs/or/rel/path>` |
 | List every registered Project (filtered to real IfcProject-bearing containers only) | `infobim project --list` |
 | Attach a Project received via external drive / shared folder | `infobim project --project-path <path> --attach` |
 | Refresh Project datasets after dropping new IFCs/docs | `infobim project --update` (inside folder) or `--project-id <GlobalId>` |

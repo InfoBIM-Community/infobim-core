@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import shutil
 import webbrowser
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -18,6 +17,7 @@ from ontobdc.cli.domain.model.command import CliCommandMetadata
 from ontobdc.cli.domain.port.command import CliCommandPort
 from ontobdc.cli.domain.request.command import CliCommandRequest
 from ontobdc.cli.domain.response.command import CommandResponse
+from ontobdc.shared.adapter.filesystem import remove_directory_tree
 from ontobdc.view.adapter.surface.context import surface_path_from_context
 from ontobdc.view.plugin.capability.transformation.data_gathered import (
     DataGatheredCapability,
@@ -148,7 +148,7 @@ class ViewProjectCommand(CliCommandPort):
             self._request.context
         )
         if etl_directory.is_dir():
-            shutil.rmtree(etl_directory)
+            remove_directory_tree(etl_directory)
 
         self._request.context.set_parameter_value(
             "surface_component_scripts",
@@ -241,4 +241,3 @@ class ViewProjectCommand(CliCommandPort):
                 f"Required InfoBIM View context was not resolved: {name}"
             )
         return value
-
