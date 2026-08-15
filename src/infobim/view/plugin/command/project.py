@@ -17,7 +17,7 @@ from ontobdc.cli.domain.model.command import CliCommandMetadata
 from ontobdc.cli.domain.port.command import CliCommandPort
 from ontobdc.cli.domain.request.command import CliCommandRequest
 from ontobdc.cli.domain.response.command import CommandResponse
-from ontobdc.shared.adapter.filesystem import remove_directory_tree
+from ontobdc.shared.adapter.filesystem import remove_directory_tree, remove_file
 from ontobdc.view.adapter.surface.context import surface_path_from_context
 from ontobdc.view.plugin.capability.transformation.data_gathered import (
     DataGatheredCapability,
@@ -143,7 +143,7 @@ class ViewProjectCommand(CliCommandPort):
 
         surface_path = surface_path_from_context(self._request.context)
         if surface_path.is_file():
-            surface_path.unlink()
+            remove_file(surface_path)
         etl_directory = DataGatheredCapability.state_directory(
             self._request.context
         )

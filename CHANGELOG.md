@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.3
+
+### Fixed
+
+- `infobim view`'s v0.5.2 retry-with-backoff fix for `PermissionError: [WinError 5]` still failed for some setups with `"still in use after 5 attempts"` — five identical failures in a row is the signature of a permanent condition (a read-only attribute OneDrive marks on synced files), not a transient lock, which retrying alone never fixes. Now uses ontobdc's improved `remove_directory_tree()`/new `remove_file()` (requires `ontobdc>=0.16.4`), which clear the read-only attribute and retry the specific failing operation before falling back to the sleep/retry loop for genuine transient locks. Also applies the same treatment to the stale surface-file removal (`surface_path.unlink()`), which had the identical unprotected-delete vulnerability.
+
 ## v0.5.2
 
 ### Fixed
