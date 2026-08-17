@@ -1,0 +1,25 @@
+# English (base/default locale). Canonical key set — every other locale
+# file must carry the same keys under the same namespaces.
+ifc_model_tile:
+  distributedIfc: "Distributed IFC"
+  ifcModel: "IFC Model"
+  noClasses: "No IFC classes are exposed by Project dataset facades."
+  ifcClassFallback: "IFC class"
+  ifcElementFallback: "IFC element"
+  classes: "Classes"
+  noElements: "No elements found for this class."
+  elements: "Elements"
+
+ifc_work_schedule_tile:
+  eyebrow: "IFC Work Schedule"
+  fallbackTitle: "IfcWorkSchedule"
+
+project_tile:
+  eyebrow: "InfoBIM · IfcProject"
+  globalIdLabel: "GlobalId"
+  geolocationLabel: "Geolocation"
+  pathLabel: "Path"
+  indexedFilesLabel: "Indexed files"
+  phasePrefix: "Phase: {phase}"
+  fallbackName: "IfcProject"
+  openLocationInMaps: "Open location on OpenStreetMap"

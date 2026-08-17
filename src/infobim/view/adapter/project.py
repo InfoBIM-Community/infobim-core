@@ -18,7 +18,7 @@ from infobim.view.domain.model import (
 from ontobdc.context.adapter.dataset_instance import (
     DatasetEntityInstanceRepository,
 )
-from ontobdc.storage.adapter.bootstrap import get_dataset_storage_file_path
+from ontobdc.storage.adapter.bootstrap import StorageBootstrap
 
 
 class InfoBIMProjectPresentationRepository:
@@ -102,7 +102,7 @@ class InfoBIMProjectPresentationRepository:
     def _project_subject(dataset_path: Path) -> str:
         graph = Graph()
         graph.parse(
-            str(get_dataset_storage_file_path(dataset_path)),
+            str(StorageBootstrap.get_dataset_storage_file_path(dataset_path)),
             format="turtle",
         )
         subjects = sorted(

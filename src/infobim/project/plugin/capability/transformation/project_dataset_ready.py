@@ -18,6 +18,20 @@ class ProjectDatasetReadyCapability(ProjectTransactionCapability):
         author=["http://kb.elias.eng.br/nid/elias.ttl#Elias"],
         tags=["infobim", "project", "dataset"],
         supported_languages=["en", "pt-br"],
+        log_message={
+            "info": {
+                "en": (
+                    "Reserved InfoBIM project EntityDataset was created or validated "
+                    "and indexed by the OntoBDC container."
+                ),
+            },
+            "debug_entry": {
+                "en": (
+                    "Creating or validating the reserved InfoBIM project "
+                    "EntityDataset and indexing it into the OntoBDC container."
+                ),
+            },
+        },
     )
 
     def is_satisfied(self, context: CliContextPort) -> bool:

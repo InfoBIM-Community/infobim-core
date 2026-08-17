@@ -8,7 +8,7 @@ from rdflib import Graph, URIRef
 
 from infobim.project.domain.model.contract import IFCOWL_NS
 from ontobdc.context.adapter.dataset_instance import DatasetEntityInstanceRepository
-from ontobdc.storage.adapter.bootstrap import get_ontobdc_directory
+from ontobdc.storage.adapter.bootstrap import StorageBootstrap
 
 
 _HAS_DATA_ENTITY_FACADE = URIRef(
@@ -197,11 +197,11 @@ class IfcClassCatalogRepository:
             path
             for path in self._project_path.iterdir()
             if path.is_dir()
-            and (get_ontobdc_directory(path) / "linkset" / "facade.ttl").is_file()
+            and (StorageBootstrap.get_ontobdc_directory(path) / "linkset" / "facade.ttl").is_file()
         )
 
     def _dataset_ifc_classes(self, dataset_path: Path) -> List[str]:
-        facade_path = get_ontobdc_directory(dataset_path) / "linkset" / "facade.ttl"
+        facade_path = StorageBootstrap.get_ontobdc_directory(dataset_path) / "linkset" / "facade.ttl"
         if not facade_path.is_file():
             return []
 

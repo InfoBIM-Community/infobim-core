@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+## v0.6.0
+
+### Changed
+
+- `infobim`'s terminal output no longer hand-rolls its own rendering (title/description as plain text, content as raw `json.dumps`). It now reuses OntoBDC's terminal presentation Surface stack wholesale — `TerminalSurface`, the `Widget` port and its implementations, and `ResponseWidgetAdapterPort`/`ResponseWidgetAdapterLoader` (requires `ontobdc>=0.16.4`, already the floor) — the same architecture OntoBDC's own CLI was rebuilt on. Every InfoBIM command already returns one of OntoBDC's own `CommandResponse` types, so OntoBDC's existing widget adapters (record/table detection, recursive section decomposition, error rendering via `ErrorWidget`) apply with no InfoBIM-specific adapter code needed. Added `infobim.cli.adapter.logo.InfoBIMLogoComponent`, a thin subclass of OntoBDC's `LogoComponent` swapping only the brand text ("InfoBIM") and version lookup — everything else (ANSI coloring, the compact one-line default vs. the large pyfiglet banner, terminal-width centering) is inherited unchanged. `infobim`'s CLI now also honors `--large-logo`, `--silent`/`-s`, and a properly wired `--json` (previously parsed but silently ignored); uncaught command errors now render through `ExceptionCommandResponse`/`ErrorWidget` instead of a raw Python traceback.
+
 ## v0.5.3
 
 ### Fixed

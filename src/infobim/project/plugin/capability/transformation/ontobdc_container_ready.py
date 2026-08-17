@@ -16,6 +16,20 @@ class OntoBDCContainerReadyCapability(ProjectTransactionCapability):
         author=["http://kb.elias.eng.br/nid/elias.ttl#Elias"],
         tags=["infobim", "project", "ontobdc", "container"],
         supported_languages=["en", "pt-br"],
+        log_message={
+            "info": {
+                "en": (
+                    "Project path was created or validated as an OntoBDC container "
+                    "ready for downstream InfoBIM steps."
+                ),
+            },
+            "debug_entry": {
+                "en": (
+                    "Creating or validating the project path as an OntoBDC "
+                    "container ready for downstream InfoBIM steps."
+                ),
+            },
+        },
     )
 
     def is_satisfied(self, context: CliContextPort) -> bool:

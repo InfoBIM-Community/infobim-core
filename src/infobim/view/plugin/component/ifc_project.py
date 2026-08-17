@@ -15,7 +15,7 @@ class IfcProjectTileComponent(ComponentPort):
         author=["http://kb.elias.eng.br/nid/elias.ttl#Elias"],
         required_uris=[IFC_PROJECT_CLASS_URI, str(DCTERMS.identifier)],
         tags=["infobim", "view", "ifc", "project", "tile"],
-        supported_languages=["en", "pt-br"],
+        supported_languages=["en", "pt-BR", "pt-PT", "es"],
         min_columns=6,
         max_columns=12,
         min_rows=7,

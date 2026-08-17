@@ -12,7 +12,11 @@ from infobim.project.domain.model.contract import (
     IFC_PROJECT_FIELDS,
 )
 from infobim.view.domain.model import InfoBIMProjectPresentation
-from ontobdc.storage.adapter.bootstrap import OBDC
+from ontobdc.storage.adapter.bootstrap import StorageNamespaceBootstrap
+
+
+StorageNamespaceBootstrap.initialize()
+_OBDC = StorageNamespaceBootstrap.OBDC
 
 
 SCHEMA = "https://schema.org/"
@@ -61,7 +65,7 @@ class InfoBIMPresentationContextAdapter:
             "urn:infobim:presentation:ifc-model:"
             + quote(presentation.project_id, safe="")
         )
-        graph.add((model_subject, RDF.type, OBDC.DataEntity))
+        graph.add((model_subject, RDF.type, _OBDC.DataEntity))
         graph.set((model_subject, DCTERMS.title, Literal("IFC Model")))
         graph.set(
             (model_subject, DCTERMS.identifier, Literal(presentation.project_id))

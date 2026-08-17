@@ -2,6 +2,17 @@ const IFCOWL = "https://standards.buildingsmart.org/IFC/DEV/IFC4_3/OWL#";
 const DCTERMS = "http://purl.org/dc/terms/";
 const SCHEMA = "https://schema.org/";
 const INFOBIM_PRESENTATION = "urn:infobim:presentation:";
+const I18N = __ONTOBDC_BUILD_I18N__;
+
+function t(key, vars) {
+  const locale = document.documentElement.lang || document.documentElement.dataset.language || "en";
+  const table = I18N[locale] || I18N.en || {};
+  let text = table[key] ?? key;
+  if (vars) {
+    for (const [name, value] of Object.entries(vars)) text = text.replaceAll(`{${name}}`, value);
+  }
+  return text;
+}
 
 class OntoInfoBIMProjectTile extends HTMLElement {
   #root;
@@ -15,7 +26,17 @@ class OntoInfoBIMProjectTile extends HTMLElement {
     this.#root = this.attachShadow({ mode: "closed" });
   }
 
-  connectedCallback() { this.#render(); }
+  connectedCallback() {
+    this.#render();
+    document.addEventListener("language-changed", this.#onLanguageChanged);
+  }
+
+  disconnectedCallback() {
+    document.removeEventListener("language-changed", this.#onLanguageChanged);
+  }
+
+  #onLanguageChanged = () => this.#render();
+
   attributeChangedCallback() { if (this.isConnected) this.#render(); }
 
   #graph() {
@@ -62,20 +83,52 @@ class OntoInfoBIMProjectTile extends HTMLElement {
     return resources.size;
   }
 
+  #renderGeolocation(latitude, longitude) {
+    const value = this.#root.querySelector(".geolocation-value");
+    if (!value) return;
+    value.replaceChildren();
+
+    const text = document.createElement("span");
+    text.className = "geolocation-text";
+
+    const lat = Number(latitude);
+    const lon = Number(longitude);
+    const isValid = Number.isFinite(lat) && Number.isFinite(lon)
+      && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+
+    if (!isValid) {
+      text.textContent = "—";
+      value.append(text);
+      return;
+    }
+
+    text.textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+
+    const pin = document.createElement("a");
+    pin.className = "map-pin";
+    pin.href = `https://www.openstreetmap.org/?mlat=${encodeURIComponent(lat)}&mlon=${encodeURIComponent(lon)}#map=18/${encodeURIComponent(lat)}/${encodeURIComponent(lon)}`;
+    pin.target = "_blank";
+    pin.rel = "noopener noreferrer";
+    pin.title = t("openLocationInMaps");
+    pin.setAttribute("aria-label", t("openLocationInMaps"));
+    pin.textContent = "\u{1F4CD}";
+
+    value.append(text, pin);
+  }
+
   #setGeolocation(entity) {
-    const target = this.#root.querySelector(".geolocation-value");
-    if (!target) return;
+    if (!this.#root.querySelector(".geolocation-value")) return;
     const latitude = this.#literal(entity, `${SCHEMA}latitude`);
     const longitude = this.#literal(entity, `${SCHEMA}longitude`);
     if (latitude && longitude) {
-      target.textContent = `${latitude}, ${longitude}`;
+      this.#renderGeolocation(latitude, longitude);
       return;
     }
-    target.textContent = "—";
+    this.#renderGeolocation(null, null);
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        target.textContent = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+        this.#renderGeolocation(position.coords.latitude, position.coords.longitude);
       },
       () => {},
       { enableHighAccuracy: false, maximumAge: 300000, timeout: 5000 },
@@ -106,26 +159,36 @@ class OntoInfoBIMProjectTile extends HTMLElement {
         .row { display:grid; grid-template-columns:minmax(6rem,32%) 1fr; gap:.6rem; padding:.4rem .6rem; border:1px solid color-mix(in srgb,var(--onto-theme-foreground,#0f172a) 14%,transparent); border-radius:10px; background:color-mix(in srgb,var(--onto-theme-background,#fff) 86%,transparent); font-size:.85rem; }
         dt { margin:0; min-width:0; overflow-wrap:anywhere; font-weight:800; color:var(--onto-theme-accent,#0ea5e9); }
         dd { margin:0; overflow-wrap:anywhere; line-height:1.35; }
+        .geolocation-value { display:inline-flex; align-items:center; gap:10px; max-width:100%; }
+        .geolocation-text { overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+        .map-pin { display:inline-grid; place-items:center; flex:0 0 auto; inline-size:28px; block-size:28px; border:1px solid color-mix(in srgb,var(--onto-theme-accent,#0ea5e9) 45%,transparent); border-radius:999px; color:inherit; background:color-mix(in srgb,var(--onto-theme-accent,#0ea5e9) 10%,transparent); text-decoration:none; line-height:1; font-size:.95rem; }
+        .map-pin:hover { background:color-mix(in srgb,var(--onto-theme-accent,#0ea5e9) 18%,transparent); }
+        .map-pin:focus-visible { outline:2px solid var(--onto-theme-accent,#0ea5e9); outline-offset:2px; }
       </style>
       <article>
-        <div class="eyebrow">InfoBIM · IfcProject</div>
+        <div class="eyebrow"></div>
         <h1></h1>
         <div class="long"></div>
         <div class="description"></div>
         <div class="meta"><span class="phase"></span></div>
         <dl>
-          <div class="row"><dt>GlobalId</dt><dd class="globalid-value"></dd></div>
-          <div class="row"><dt>Geolocalização</dt><dd class="geolocation-value">—</dd></div>
-          <div class="row"><dt>Path</dt><dd class="path-value"></dd></div>
-          <div class="row"><dt>Arquivos indexados</dt><dd class="indexed-value"></dd></div>
+          <div class="row"><dt class="globalid-label"></dt><dd class="globalid-value"></dd></div>
+          <div class="row"><dt class="geolocation-label"></dt><dd class="geolocation-value"><span class="geolocation-text">—</span></dd></div>
+          <div class="row"><dt class="path-label"></dt><dd class="path-value"></dd></div>
+          <div class="row"><dt class="indexed-label"></dt><dd class="indexed-value"></dd></div>
         </dl>
       </article>`;
-    this.#root.querySelector("h1").textContent = name || "IfcProject";
+    this.#root.querySelector(".eyebrow").textContent = t("eyebrow");
+    this.#root.querySelector("h1").textContent = name || t("fallbackName");
     this.#root.querySelector(".long").textContent = longName;
     this.#root.querySelector(".description").textContent = description || "—";
-    this.#root.querySelector(".phase").textContent = phase ? `Phase: ${phase}` : "";
+    this.#root.querySelector(".phase").textContent = phase ? t("phasePrefix", { phase }) : "";
+    this.#root.querySelector(".globalid-label").textContent = t("globalIdLabel");
     this.#root.querySelector(".globalid-value").textContent = globalId || "—";
+    this.#root.querySelector(".geolocation-label").textContent = t("geolocationLabel");
+    this.#root.querySelector(".path-label").textContent = t("pathLabel");
     this.#root.querySelector(".path-value").textContent = projectPath || "—";
+    this.#root.querySelector(".indexed-label").textContent = t("indexedFilesLabel");
     this.#root.querySelector(".indexed-value").textContent = String(indexedFileCount);
     this.#setGeolocation(entity);
   }

@@ -2,13 +2,13 @@ from pathlib import Path
 from typing import Optional
 
 from infobim.project.domain.model.contract import IFC_PROJECT_CLASS_URI, IFC_PROJECT_FACADE_URI, IFC_PROJECT_FIELDS, PROJECT_DATASET_NAME
-from ontobdc.storage.adapter.bootstrap import get_ontobdc_directory
+from ontobdc.storage.adapter.bootstrap import StorageBootstrap
 from rdflib import Graph, URIRef
 
 
 def facade_path(container_path: str) -> Path:
     dataset_path = Path(container_path).expanduser().resolve() / PROJECT_DATASET_NAME
-    return get_ontobdc_directory(dataset_path) / "linkset" / "facade.ttl"
+    return StorageBootstrap.get_ontobdc_directory(dataset_path) / "linkset" / "facade.ttl"
 
 
 def evaluate(*, container_path: str) -> bool:

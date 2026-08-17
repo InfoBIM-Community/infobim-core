@@ -1,4 +1,15 @@
 const RDF_VALUE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#value";
+const I18N = __ONTOBDC_BUILD_I18N__;
+
+function t(key, vars) {
+  const locale = document.documentElement.lang || document.documentElement.dataset.language || "en";
+  const table = I18N[locale] || I18N.en || {};
+  let text = table[key] ?? key;
+  if (vars) {
+    for (const [name, value] of Object.entries(vars)) text = text.replaceAll(`{${name}}`, value);
+  }
+  return text;
+}
 
 class OntoInfoBIMIfcModelTile extends HTMLElement {
   #root;
@@ -12,7 +23,17 @@ class OntoInfoBIMIfcModelTile extends HTMLElement {
     this.#root = this.attachShadow({ mode: "closed" });
   }
 
-  connectedCallback() { this.#render(); }
+  connectedCallback() {
+    this.#render();
+    document.addEventListener("language-changed", this.#onLanguageChanged);
+  }
+
+  disconnectedCallback() {
+    document.removeEventListener("language-changed", this.#onLanguageChanged);
+  }
+
+  #onLanguageChanged = () => this.#render();
+
   attributeChangedCallback() {
     if (this.isConnected) {
       this.#className = null;
@@ -38,7 +59,7 @@ class OntoInfoBIMIfcModelTile extends HTMLElement {
   }
 
   #name(element) {
-    return String(element?.Name ?? element?.name ?? this.#globalId(element) ?? "IFC element").trim();
+    return String(element?.Name ?? element?.name ?? this.#globalId(element) ?? t("ifcElementFallback")).trim();
   }
 
   #render() {
@@ -71,11 +92,14 @@ class OntoInfoBIMIfcModelTile extends HTMLElement {
         .empty { padding:1rem; text-align:center; opacity:.58; font-size:.82rem; }
       </style>
       <article>
-        <header><div class="title"><div class="eyebrow">Distributed IFC</div><h2>IFC Model</h2></div><div class="counts"></div></header>
+        <header><div class="title"><div class="eyebrow"></div><h2></h2></div><div class="counts"></div></header>
         <main></main>
       </article>`;
 
-    this.#root.querySelector(".counts").textContent = `${payload.class_count ?? classes.length} classes · ${payload.element_count ?? 0} elements`;
+    this.#root.querySelector(".eyebrow").textContent = t("distributedIfc");
+    this.#root.querySelector("h2").textContent = t("ifcModel");
+    this.#root.querySelector(".counts").textContent =
+      `${payload.class_count ?? classes.length} ${t("classes").toLowerCase()} · ${payload.element_count ?? 0} ${t("elements").toLowerCase()}`;
     const main = this.#root.querySelector("main");
 
     if (selectedElement) this.#renderElement(main, selectedClass, selectedElement);
@@ -93,7 +117,8 @@ class OntoInfoBIMIfcModelTile extends HTMLElement {
 
   #renderClasses(main, classes) {
     if (!classes.length) {
-      main.innerHTML = '<div class="empty">No IFC classes are exposed by Project dataset facades.</div>';
+      main.innerHTML = '<div class="empty"></div>';
+      main.querySelector(".empty").textContent = t("noClasses");
       return;
     }
     const list = document.createElement("div");
@@ -102,7 +127,7 @@ class OntoInfoBIMIfcModelTile extends HTMLElement {
       const button = document.createElement("button");
       const name = document.createElement("span");
       name.className = "name";
-      name.textContent = item.class_name || item.class_uri || "IFC class";
+      name.textContent = item.class_name || item.class_uri || t("ifcClassFallback");
       const count = document.createElement("span");
       count.className = "count";
       count.textContent = String(item.element_count ?? 0);
@@ -114,9 +139,10 @@ class OntoInfoBIMIfcModelTile extends HTMLElement {
   }
 
   #renderElements(main, selectedClass, elements) {
-    this.#back(main, "Classes", () => { this.#className = null; this.#render(); });
+    this.#back(main, t("classes"), () => { this.#className = null; this.#render(); });
     if (!elements.length) {
-      main.insertAdjacentHTML("beforeend", '<div class="empty">No elements found for this class.</div>');
+      main.insertAdjacentHTML("beforeend", '<div class="empty"></div>');
+      main.querySelector(".empty").textContent = t("noElements");
       return;
     }
     const list = document.createElement("div");
@@ -138,8 +164,8 @@ class OntoInfoBIMIfcModelTile extends HTMLElement {
   }
 
   #renderElement(main, selectedClass, element) {
-    this.#back(main, selectedClass.class_name || "Elements", () => { this.#elementKey = null; this.#render(); });
-    const values = { "IFC class": selectedClass.class_name, ...element };
+    this.#back(main, selectedClass.class_name || t("elements"), () => { this.#elementKey = null; this.#render(); });
+    const values = { [t("ifcClassFallback")]: selectedClass.class_name, ...element };
     const dl = document.createElement("dl");
     for (const [key, raw] of Object.entries(values)) {
       if (raw === null || raw === undefined || raw === "") continue;

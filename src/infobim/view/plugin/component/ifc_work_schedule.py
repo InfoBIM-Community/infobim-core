@@ -15,7 +15,7 @@ class IfcWorkScheduleTileComponent(ComponentPort):
         author=["http://kb.elias.eng.br/nid/elias.ttl#Elias"],
         required_uris=[f"{INFOBIM_NS}IfcWorkSchedule"],
         tags=["infobim", "view", "ifc", "schedule", "tile"],
-        supported_languages=["en", "pt-br"],
+        supported_languages=["en", "pt-BR", "pt-PT", "es"],
         min_columns=3,
         max_columns=8,
         min_rows=2,

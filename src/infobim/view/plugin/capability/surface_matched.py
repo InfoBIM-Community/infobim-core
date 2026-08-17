@@ -8,10 +8,15 @@ from rdflib.namespace import RDF
 from infobim.project.domain.model.contract import IFCOWL_NS
 from infobim.view.adapter.component import InfoBIMComponentLoader
 from ontobdc.cli.domain.port.context import CliContextPort
-from ontobdc.storage.adapter.bootstrap import OBDC
+from ontobdc.storage.adapter.bootstrap import StorageNamespaceBootstrap
 from ontobdc.view.plugin.capability.transformation.surface_matched import (
+    FILE_SIZE_TILE_CLASS_URI,
     SurfaceMatchedCapability,
 )
+
+
+StorageNamespaceBootstrap.initialize()
+_OBDC = StorageNamespaceBootstrap.OBDC
 
 
 class InfoBIMSurfaceMatchedCapability(SurfaceMatchedCapability):
@@ -45,6 +50,10 @@ class InfoBIMSurfaceMatchedCapability(SurfaceMatchedCapability):
                 requests.append({"data": resource, "region": "content"})
                 seen.add(resource)
 
+        requests.append(
+            {"tileClass": FILE_SIZE_TILE_CLASS_URI, "region": "content"}
+        )
+
         for request in super()._auto_matched_requests(graph):
             resource = str(request.get("data") or "")
             if not resource or resource in seen:
@@ -55,11 +64,10 @@ class InfoBIMSurfaceMatchedCapability(SurfaceMatchedCapability):
                 for value in graph.objects(subject, RDF.type)
                 if isinstance(value, URIRef)
             }
-            if OBDC.DataContainer in types:
+            if _OBDC.DataContainer in types:
                 continue
             if any(str(value).startswith(IFCOWL_NS) for value in types):
                 continue
             requests.append(request)
             seen.add(resource)
         return requests
-

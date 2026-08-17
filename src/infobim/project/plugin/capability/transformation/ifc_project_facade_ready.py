@@ -6,7 +6,7 @@ from infobim.project.plugin.capability.base import ProjectTransactionCapability
 from infobim.project.plugin.check.is_ifc_project_facade_ready import evaluate
 from ontobdc.cli.domain.port.context import CliContextPort
 from ontobdc.shared.domain.model.capability import CapabilityMetadata
-from ontobdc.storage.adapter.bootstrap import get_ontobdc_directory
+from ontobdc.storage.adapter.bootstrap import StorageBootstrap
 
 
 class IfcProjectFacadeReadyCapability(ProjectTransactionCapability):
@@ -18,6 +18,21 @@ class IfcProjectFacadeReadyCapability(ProjectTransactionCapability):
         author=["http://kb.elias.eng.br/nid/elias.ttl#Elias"],
         tags=["infobim", "project", "ifc", "facade"],
         supported_languages=["en", "pt-br"],
+        log_message={
+            "info": {
+                "en": (
+                    "IFC project facade was constructed from the IFC file header, "
+                    "project entity, and declared units ready for consumption by "
+                    "downstream InfoBIM steps."
+                ),
+            },
+            "debug_entry": {
+                "en": (
+                    "Constructing the IFC project facade from the IFC file "
+                    "header, project entity, and declared units."
+                ),
+            },
+        },
     )
 
     def is_satisfied(self, context: CliContextPort) -> bool:
@@ -26,7 +41,7 @@ class IfcProjectFacadeReadyCapability(ProjectTransactionCapability):
     def execute(self, context: CliContextPort) -> Dict[str, Any]:
         container_path = Path(str(context.get_parameter_value("container_path"))).expanduser().resolve()
         dataset_path = container_path / PROJECT_DATASET_NAME
-        linkset_dir = get_ontobdc_directory(dataset_path) / "linkset"
+        linkset_dir = StorageBootstrap.get_ontobdc_directory(dataset_path) / "linkset"
         linkset_dir.mkdir(parents=True, exist_ok=True)
         facade_path = linkset_dir / "facade.ttl"
 

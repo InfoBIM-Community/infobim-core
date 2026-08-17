@@ -3,7 +3,11 @@ from rdflib.namespace import RDF
 from infobim.view.adapter.presentation import SCHEMA
 from ontobdc.shared.domain.model.component import ComponentMetadata
 from ontobdc.shared.domain.port.component import ComponentPort
-from ontobdc.storage.adapter.bootstrap import OBDC
+from ontobdc.storage.adapter.bootstrap import StorageNamespaceBootstrap
+
+
+StorageNamespaceBootstrap.initialize()
+_OBDC = StorageNamespaceBootstrap.OBDC
 
 
 class IfcModelTileComponent(ComponentPort):
@@ -18,12 +22,12 @@ class IfcModelTileComponent(ComponentPort):
         ),
         author=["http://kb.elias.eng.br/nid/elias.ttl#Elias"],
         required_uris=[
-            str(OBDC.DataEntity),
+            str(_OBDC.DataEntity),
             str(RDF.value),
             f"{SCHEMA}encodingFormat",
         ],
         tags=["infobim", "view", "ifc", "model", "tile"],
-        supported_languages=["en", "pt-br"],
+        supported_languages=["en", "pt-BR", "pt-PT", "es"],
         min_columns=4,
         max_columns=12,
         min_rows=4,

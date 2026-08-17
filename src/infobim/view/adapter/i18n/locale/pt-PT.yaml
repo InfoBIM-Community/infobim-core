@@ -1,0 +1,24 @@
+# Portuguese (Portugal)
+ifc_model_tile:
+  distributedIfc: "IFC Distribuído"
+  ifcModel: "Modelo IFC"
+  noClasses: "Nenhuma classe IFC exposta pelas facades do dataset do Projeto."
+  ifcClassFallback: "Classe IFC"
+  ifcElementFallback: "Elemento IFC"
+  classes: "Classes"
+  noElements: "Nenhum elemento encontrado para esta classe."
+  elements: "Elementos"
+
+ifc_work_schedule_tile:
+  eyebrow: "Cronograma IFC"
+  fallbackTitle: "IfcWorkSchedule"
+
+project_tile:
+  eyebrow: "InfoBIM · IfcProject"
+  globalIdLabel: "GlobalId"
+  geolocationLabel: "Geolocalização"
+  pathLabel: "Caminho"
+  indexedFilesLabel: "Ficheiros indexados"
+  phasePrefix: "Fase: {phase}"
+  fallbackName: "IfcProject"
+  openLocationInMaps: "Abrir localização no OpenStreetMap"

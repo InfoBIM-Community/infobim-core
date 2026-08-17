@@ -16,6 +16,20 @@ class ProjectReadyCapability(ProjectTransactionCapability):
         author=["http://kb.elias.eng.br/nid/elias.ttl#Elias"],
         tags=["infobim", "project", "ready"],
         supported_languages=["en", "pt-br"],
+        log_message={
+            "info": {
+                "en": (
+                    "Complete InfoBIM project contract was validated, and the "
+                    "underlying OntoBDC container was resynchronized."
+                ),
+            },
+            "debug_entry": {
+                "en": (
+                    "Validating the complete InfoBIM project contract and "
+                    "resynchronizing the underlying OntoBDC container."
+                ),
+            },
+        },
     )
 
     def is_satisfied(self, context: CliContextPort) -> bool:

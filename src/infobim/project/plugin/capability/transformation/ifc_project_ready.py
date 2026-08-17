@@ -8,9 +8,13 @@ from infobim.project.plugin.check.is_ifc_project_ready import evaluate
 from ontobdc.cli.domain.port.context import CliContextPort
 from ontobdc.shared.adapter.entity_workbook import EntityWorkbookAdapter, EntityWorkbookField
 from ontobdc.shared.domain.model.capability import CapabilityMetadata
-from ontobdc.storage.adapter.bootstrap import OBDC, get_dataset_storage_file_path, get_ontobdc_directory
+from ontobdc.storage.adapter.bootstrap import StorageBootstrap, StorageNamespaceBootstrap
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import DCTERMS, RDF
+
+
+StorageNamespaceBootstrap.initialize()
+_OBDC = StorageNamespaceBootstrap.OBDC
 
 
 class IfcProjectReadyCapability(ProjectTransactionCapability):
@@ -23,6 +27,22 @@ class IfcProjectReadyCapability(ProjectTransactionCapability):
         author=["http://kb.elias.eng.br/nid/elias.ttl#Elias"],
         tags=["infobim", "project", "ifc", "xlsx"],
         supported_languages=["en", "pt-br"],
+        log_message={
+            "info": {
+                "en": (
+                    "Editable IfcProject instance and its XLSX and Data Package "
+                    "representations were created inside the reserved project "
+                    "dataset."
+                ),
+            },
+            "debug_entry": {
+                "en": (
+                    "Creating or validating the editable IfcProject instance "
+                    "and its XLSX and Data Package representations inside the "
+                    "reserved project dataset."
+                ),
+            },
+        },
     )
 
     def is_satisfied(self, context: CliContextPort) -> bool:
@@ -31,22 +51,22 @@ class IfcProjectReadyCapability(ProjectTransactionCapability):
     def execute(self, context: CliContextPort) -> Dict[str, Any]:
         container_path = Path(str(context.get_parameter_value("container_path"))).expanduser().resolve()
         dataset_path = container_path / PROJECT_DATASET_NAME
-        dataset_metadata_path = get_dataset_storage_file_path(dataset_path)
+        dataset_metadata_path = StorageBootstrap.get_dataset_storage_file_path(dataset_path)
         if not dataset_metadata_path.is_file():
             raise ValueError(f"Project dataset metadata does not exist: {dataset_metadata_path}")
 
         graph = Graph()
         graph.parse(str(dataset_metadata_path), format="turtle")
-        dataset_subjects = [subject for subject in graph.subjects(RDF.type, OBDC.EntityDataset) if isinstance(subject, URIRef)]
+        dataset_subjects = [subject for subject in graph.subjects(RDF.type, _OBDC.EntityDataset) if isinstance(subject, URIRef)]
         if len(dataset_subjects) != 1:
             raise ValueError("Project dataset must declare exactly one obdc:EntityDataset.")
         dataset_subject = dataset_subjects[0]
 
-        existing_entities = [value for value in graph.objects(dataset_subject, OBDC.hasDataEntity) if isinstance(value, URIRef)]
+        existing_entities = [value for value in graph.objects(dataset_subject, _OBDC.hasDataEntity) if isinstance(value, URIRef)]
         entity_subject = existing_entities[0] if existing_entities else URIRef(f"urn:uuid:{uuid.uuid5(uuid.NAMESPACE_URL, str(container_path))}")
 
-        graph.add((dataset_subject, OBDC.hasDataEntity, entity_subject))
-        graph.add((entity_subject, RDF.type, OBDC.DataEntity))
+        graph.add((dataset_subject, _OBDC.hasDataEntity, entity_subject))
+        graph.add((entity_subject, RDF.type, _OBDC.DataEntity))
         graph.add((entity_subject, RDF.type, URIRef(IFC_PROJECT_CLASS_URI)))
         graph.set((entity_subject, DCTERMS.conformsTo, URIRef(IFC_PROJECT_FACADE_URI)))
         graph.set((entity_subject, DCTERMS.title, Literal(container_path.name)))
@@ -55,7 +75,7 @@ class IfcProjectReadyCapability(ProjectTransactionCapability):
         project_global_id = self._new_ifc_global_id()
         fields: List[EntityWorkbookField] = [EntityWorkbookField(name=identifier) for identifier, _ in IFC_PROJECT_FIELDS]
         output_dir = dataset_path / "payload" / "document"
-        datapackage_path = get_ontobdc_directory(dataset_path) / "datapackage.json"
+        datapackage_path = StorageBootstrap.get_ontobdc_directory(dataset_path) / "datapackage.json"
         artifact = EntityWorkbookAdapter().generate(
             output_dir=output_dir,
             workbook_name=PROJECT_WORKBOOK_NAME,

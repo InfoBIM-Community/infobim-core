@@ -1,3 +1,15 @@
+const I18N = __ONTOBDC_BUILD_I18N__;
+
+function t(key, vars) {
+  const locale = document.documentElement.lang || document.documentElement.dataset.language || "en";
+  const table = I18N[locale] || I18N.en || {};
+  let text = table[key] ?? key;
+  if (vars) {
+    for (const [name, value] of Object.entries(vars)) text = text.replaceAll(`{${name}}`, value);
+  }
+  return text;
+}
+
 class OntoInfoBIMIfcWorkScheduleTile extends HTMLElement {
   #root;
 
@@ -8,7 +20,17 @@ class OntoInfoBIMIfcWorkScheduleTile extends HTMLElement {
     this.#root = this.attachShadow({ mode: "closed" });
   }
 
-  connectedCallback() { this.#render(); }
+  connectedCallback() {
+    this.#render();
+    document.addEventListener("language-changed", this.#onLanguageChanged);
+  }
+
+  disconnectedCallback() {
+    document.removeEventListener("language-changed", this.#onLanguageChanged);
+  }
+
+  #onLanguageChanged = () => this.#render();
+
   attributeChangedCallback() { if (this.isConnected) this.#render(); }
 
   #entity() {
@@ -35,7 +57,7 @@ class OntoInfoBIMIfcWorkScheduleTile extends HTMLElement {
     }
     const title = rows.find(([label]) => label.toLowerCase() === "title")?.[1]
       || rows.find(([label]) => label.toLowerCase() === "name")?.[1]
-      || "IfcWorkSchedule";
+      || t("fallbackTitle");
 
     this.#root.innerHTML = `
       <style>
@@ -46,7 +68,8 @@ class OntoInfoBIMIfcWorkScheduleTile extends HTMLElement {
         dl { display:grid; grid-template-columns:minmax(6rem,.35fr) 1fr; gap:.35rem .65rem; margin:0; font-size:.74rem; }
         dt { font-weight:750; opacity:.62; } dd { margin:0; overflow-wrap:anywhere; }
       </style>
-      <article><div class="eyebrow">IFC Work Schedule</div><h2></h2><dl></dl></article>`;
+      <article><div class="eyebrow"></div><h2></h2><dl></dl></article>`;
+    this.#root.querySelector(".eyebrow").textContent = t("eyebrow");
     this.#root.querySelector("h2").textContent = title;
     const dl = this.#root.querySelector("dl");
     for (const [label, value] of rows) {

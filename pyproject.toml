@@ -7,7 +7,7 @@ name = "infobim"
 authors = [
     { name = "Elias Magalhães", email = "elias@brasidata.com" }
 ]
-version = "0.5.3"
+version = "0.6.0"
 description = "InfoBIM"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -15,6 +15,7 @@ dependencies = [
     "ontobdc>=0.16.4",
     "ontobdc-view>=0.1.0",
     "openpyxl>=3.1",
+    "PyYAML>=6.0",
 ]
 
 [project.scripts]
@@ -32,4 +33,5 @@ infobim = [
     "context/ontology/*.ttl",
     "view/plugin/asset/js/*.js",
     "**/*.yaml",
+    "i18n/locale/*.yaml",
 ]
