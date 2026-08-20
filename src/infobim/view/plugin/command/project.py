@@ -92,7 +92,25 @@ class ViewProjectCommand(CliCommandPort):
 
     def check(self) -> bool:
         self._bind_explicit_values()
-        ProjectIdStrategy().execute(self._request.context)
+        # The root ``.__ontobdc__/context.ttl`` is shared by every sibling
+        # container in a project.  A previous ``infobim view`` run against
+        # another project (e.g. ``data/``) leaves stale ``container_*`` and
+        # ``surface_*`` parameters persisted there.  ``ProjectIdStrategy``
+        # below only knows about ``project_id`` / ``project_path`` and would
+        # happily leave those stale bindings in place; later the
+        # ``SurfaceContextAdapter`` would then derive the output
+        # ``index.html`` location from the *stale* ``container_path`` and
+        # silently write / open the wrong project's surface page.  Wipe any
+        # persisted surface-target parameters BEFORE we resolve the current
+        # project so the pipeline always targets the directory the user
+        # actually ``cd``'d into.
+        context = self._request.context
+        if getattr(context, "delete_parameter", None) is not None:
+            context.delete_parameter("container_id")
+            context.delete_parameter("container_path")
+            context.delete_parameter("surface_id")
+            context.delete_parameter("surface_path")
+        ProjectIdStrategy().execute(context)
 
         project_id = self._context_value("project_id")
         project_path = self._context_value("project_path")
@@ -108,6 +126,17 @@ class ViewProjectCommand(CliCommandPort):
                 "from inside an InfoBIM Project directory, or pass "
                 "--project-id <GlobalId> (see `infobim project --list`)."
             )
+
+        # Mirror the resolved project location onto the generic container
+        # parameters used by the downstream OntoBDC surface pipeline.  The
+        # project directory IS the data container for ``infobim view``; by
+        # setting both here we guarantee that every downstream adapter
+        # (``SurfaceContextAdapter``, ``DataGatheredCapability``, ETL state
+        # directories, standalone viewer sidecar, etc.) writes artifacts
+        # NEXT TO the project's own files -- and not next to some stale
+        # sibling container lingering in ``context.ttl``.
+        context.set_parameter_value("container_id", project_id)
+        context.set_parameter_value("container_path", str(Path(str(project_path)).expanduser().resolve()))
 
         representation = (
             self._argument_value("--representation") or "html"

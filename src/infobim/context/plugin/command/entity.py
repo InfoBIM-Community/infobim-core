@@ -45,14 +45,36 @@ class InfoBIMContextEntityCommand(CliCommandPort):
         if not args or args[0] != "context":
             return False
         body = args[1:]
+        if not body:
+            return False
+
         if body == ["--entity", "--all"]:
             return True
-        if len(body) == 2 and body[0] == "--entity":
-            return True
+
         if "--entity" not in body:
             return False
-        if "--create" in body:
+
+        project_flag_count = 0
+        if "--project-id" in body:
+            project_flag_count += 1
+        if "--project" in body:
+            project_flag_count += 1
+
+        create_present = "--create" in body
+        if create_present:
+            # infobim context --create <name> --entity <EntityName> [--project ...]
+            # Each --flag has a value, so total body length is:
+            #   4 (create + value + entity + value) OR 6 (add project-id + value)
+            # Flags can appear in any order; allow either length, but make
+            # sure project selectors don't add up to two.
+            if project_flag_count > 1:
+                return False
             return len(body) in (4, 6)
+
+        # No --create: global catalog / entity lookup.
+        if project_flag_count > 1:
+            return False
+        # infobim context --entity <value> [--project ...]
         return len(body) in (2, 4)
 
     def __init__(self, request: CliCommandRequest):

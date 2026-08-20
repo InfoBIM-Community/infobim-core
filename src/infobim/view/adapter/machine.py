@@ -60,10 +60,20 @@ class InfoBIMSurfaceGenerationStateTransitionHandler(
             return
 
         if to_state == SurfaceGenerationProcessState.SURFACE_MATCHED:
-            CapabilityExecutor.execute(
-                InfoBIMSurfaceMatchedCapability(),
-                self.context,
-            )
+            try:
+                CapabilityExecutor.execute(
+                    InfoBIMSurfaceMatchedCapability(),
+                    self.context,
+                )
+            except Exception as exc:  # pragma: no cover - diagnostics mirror
+                self._logger.log_error(
+                    "HTML Surface capability failed "
+                    f"(current={self.current_state.value}, target={to_state.value}, "
+                    f"capability=InfoBIMSurfaceMatchedCapability): "
+                    f"{type(exc).__name__}: {exc}"
+                )
+                raise
+            self._last_transition_state = to_state
             return
 
         super().perform_state_transition(to_state)

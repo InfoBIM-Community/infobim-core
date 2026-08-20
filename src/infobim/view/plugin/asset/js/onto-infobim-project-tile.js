@@ -120,19 +120,7 @@ class OntoInfoBIMProjectTile extends HTMLElement {
     if (!this.#root.querySelector(".geolocation-value")) return;
     const latitude = this.#literal(entity, `${SCHEMA}latitude`);
     const longitude = this.#literal(entity, `${SCHEMA}longitude`);
-    if (latitude && longitude) {
-      this.#renderGeolocation(latitude, longitude);
-      return;
-    }
-    this.#renderGeolocation(null, null);
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        this.#renderGeolocation(position.coords.latitude, position.coords.longitude);
-      },
-      () => {},
-      { enableHighAccuracy: false, maximumAge: 300000, timeout: 5000 },
-    );
+    this.#renderGeolocation(latitude, longitude);
   }
 
   #render() {

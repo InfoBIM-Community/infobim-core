@@ -28,7 +28,7 @@ class IfcModelTileComponent(ComponentPort):
         ],
         tags=["infobim", "view", "ifc", "model", "tile"],
         supported_languages=["en", "pt-BR", "pt-PT", "es"],
-        min_columns=4,
+        min_columns=5,
         max_columns=12,
         min_rows=4,
         max_rows=8,

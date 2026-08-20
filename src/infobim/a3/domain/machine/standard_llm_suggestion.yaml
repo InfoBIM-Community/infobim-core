@@ -1,0 +1,57 @@
+statechart:
+  name: StandardLlmFileSuggestion
+  description: "LLM-driven file suggestion pipeline for InfoBIM A3: bind container, load RO-Crate manifest, enumerate files, evaluate each file via Claude Haiku/Sonnet against a target dimension-property, and persist the accepted suggestions so they surface on the Suggested Files screen."
+
+  root state:
+    name: standard_llm_file_suggestion
+    initial: undefined
+
+    states:
+      - name: undefined
+        description: "Initial state before the command parameters (project, element, target dimension-property) are classified."
+        transitions:
+          - target: container_bound
+            guard: handler.can_transit_to(to_state = A3LlmSuggestionProcessState.CONTAINER_BOUND)
+            action: handler.perform_state_transition(to_state = A3LlmSuggestionProcessState.CONTAINER_BOUND)
+            contract:
+              - after: handler.validate_state_transition(from_state = A3LlmSuggestionProcessState.UNDEFINED, to_state = A3LlmSuggestionProcessState.CONTAINER_BOUND)
+
+      - name: container_bound
+        description: "The requested InfoBIM project (--project) resolved to an existing OntoBDC container and the target BIM element (--element) and target dimension-property (--suggest) were bound into the execution context."
+        transitions:
+          - target: ro_crate_loaded
+            guard: handler.can_transit_to(to_state = A3LlmSuggestionProcessState.RO_CRATE_LOADED)
+            action: handler.perform_state_transition(to_state = A3LlmSuggestionProcessState.RO_CRATE_LOADED)
+            contract:
+              - after: handler.validate_state_transition(from_state = A3LlmSuggestionProcessState.CONTAINER_BOUND, to_state = A3LlmSuggestionProcessState.RO_CRATE_LOADED)
+
+      - name: ro_crate_loaded
+        description: "The container RO-Crate manifest (ro-crate-metadata.json) was loaded and validated: the crate graph, dataset node and hasPart list are all consistent with the on-disk file listing."
+        transitions:
+          - target: files_enumerated
+            guard: handler.can_transit_to(to_state = A3LlmSuggestionProcessState.FILES_ENUMERATED)
+            action: handler.perform_state_transition(to_state = A3LlmSuggestionProcessState.FILES_ENUMERATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = A3LlmSuggestionProcessState.RO_CRATE_LOADED, to_state = A3LlmSuggestionProcessState.FILES_ENUMERATED)
+
+      - name: files_enumerated
+        description: "Every file listed in the RO-Crate has been enriched with basic metadata (relative path, MIME type, size, file node attributes) and deduplicated against the central publication block list."
+        transitions:
+          - target: llm_evaluated
+            guard: handler.can_transit_to(to_state = A3LlmSuggestionProcessState.LLM_EVALUATED)
+            action: handler.perform_state_transition(to_state = A3LlmSuggestionProcessState.LLM_EVALUATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = A3LlmSuggestionProcessState.FILES_ENUMERATED, to_state = A3LlmSuggestionProcessState.LLM_EVALUATED)
+
+      - name: llm_evaluated
+        description: "Every enumerated file was evaluated through Claude Haiku/Sonnet. For each file the model returned a boolean decision plus a rationale explaining whether the file is a good evidence source for the target dimension-property on the target BIM element."
+        transitions:
+          - target: suggestions_saved
+            guard: handler.can_transit_to(to_state = A3LlmSuggestionProcessState.SUGGESTIONS_SAVED)
+            action: handler.perform_state_transition(to_state = A3LlmSuggestionProcessState.SUGGESTIONS_SAVED)
+            contract:
+              - after: handler.validate_state_transition(from_state = A3LlmSuggestionProcessState.LLM_EVALUATED, to_state = A3LlmSuggestionProcessState.SUGGESTIONS_SAVED)
+
+      - name: suggestions_saved
+        description: "Accepted LLM suggestions have been persisted into the container as dimension-specific file suggestions so the Suggested Files screen can render them for the target element and dimension-property."
+        type: final
