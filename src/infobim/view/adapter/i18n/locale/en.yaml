@@ -13,6 +13,12 @@ ifc_model_tile:
 ifc_work_schedule_tile:
   eyebrow: "IFC Work Schedule"
   fallbackTitle: "IfcWorkSchedule"
+  openView: "Open schedule view"
+  badge: "work schedule"
+  conformsToLabel: "Conforms to"
+  expand: "Expand"
+  collapse: "Collapse"
+  noDetailsToShow: "No details to show"
 
 project_tile:
   eyebrow: "InfoBIM · IfcProject"

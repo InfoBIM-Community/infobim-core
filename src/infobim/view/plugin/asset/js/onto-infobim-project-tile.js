@@ -104,14 +104,21 @@ class OntoInfoBIMProjectTile extends HTMLElement {
 
     text.textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
 
-    const pin = document.createElement("a");
+    const isZeroGeolocation = lat === 0 && lon === 0;
+    const pin = document.createElement(isZeroGeolocation ? "span" : "a");
     pin.className = "map-pin";
-    pin.href = `https://www.openstreetmap.org/?mlat=${encodeURIComponent(lat)}&mlon=${encodeURIComponent(lon)}#map=18/${encodeURIComponent(lat)}/${encodeURIComponent(lon)}`;
-    pin.target = "_blank";
-    pin.rel = "noopener noreferrer";
-    pin.title = t("openLocationInMaps");
-    pin.setAttribute("aria-label", t("openLocationInMaps"));
     pin.textContent = "\u{1F4CD}";
+
+    if (!isZeroGeolocation) {
+      pin.href = `https://www.openstreetmap.org/?mlat=${encodeURIComponent(lat)}&mlon=${encodeURIComponent(lon)}#map=18/${encodeURIComponent(lat)}/${encodeURIComponent(lon)}`;
+      pin.target = "_blank";
+      pin.rel = "noopener noreferrer";
+      pin.title = t("openLocationInMaps");
+      pin.setAttribute("aria-label", t("openLocationInMaps"));
+    } else {
+      pin.setAttribute("aria-disabled", "true");
+      pin.setAttribute("aria-label", t("geolocationDisabledLabel", { fallback: "Geolocation unavailable" }));
+    }
 
     value.append(text, pin);
   }
@@ -150,8 +157,9 @@ class OntoInfoBIMProjectTile extends HTMLElement {
         .geolocation-value { display:inline-flex; align-items:center; gap:10px; max-width:100%; }
         .geolocation-text { overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
         .map-pin { display:inline-grid; place-items:center; flex:0 0 auto; inline-size:28px; block-size:28px; border:1px solid color-mix(in srgb,var(--onto-theme-accent,#0ea5e9) 45%,transparent); border-radius:999px; color:inherit; background:color-mix(in srgb,var(--onto-theme-accent,#0ea5e9) 10%,transparent); text-decoration:none; line-height:1; font-size:.95rem; }
-        .map-pin:hover { background:color-mix(in srgb,var(--onto-theme-accent,#0ea5e9) 18%,transparent); }
-        .map-pin:focus-visible { outline:2px solid var(--onto-theme-accent,#0ea5e9); outline-offset:2px; }
+        .map-pin:hover:not([aria-disabled]) { background:color-mix(in srgb,var(--onto-theme-accent,#0ea5e9) 18%,transparent); }
+        .map-pin:focus-visible:not([aria-disabled]) { outline:2px solid var(--onto-theme-accent,#0ea5e9); outline-offset:2px; }
+        .map-pin[aria-disabled="true"] { opacity:.5; cursor:not-allowed; border-color:color-mix(in srgb,var(--onto-theme-accent,#0ea5e9) 25%,transparent); background:color-mix(in srgb,var(--onto-theme-accent,#0ea5e9) 5%,transparent); }
       </style>
       <article>
         <div class="eyebrow"></div>

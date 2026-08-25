@@ -12,7 +12,7 @@ from ontobdc.storage.adapter.bootstrap import StorageBootstrap
 
 
 _HAS_DATA_ENTITY_FACADE = URIRef(
-    "http://ontobdc.org/ontology/domain/ns.ttl#hasDataEntityFacade"
+    "http://ontobdc.org/ontology/domain/ontobdc/ns.ttl#hasDataEntityFacade"
 )
 
 

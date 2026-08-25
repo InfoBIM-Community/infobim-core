@@ -50,18 +50,18 @@ class IfcProjectFacadeReadyCapability(ProjectTransactionCapability):
             field_uri = f"{INFOBIM_NS}IfcProjectFacadeField{index}"
             field_blocks.append(
                 f"<{field_uri}>\n"
-                f"    <http://ontobdc.org/ontology/domain/ns.ttl#identifier> \"{identifier}\" ;\n"
+                f"    <http://ontobdc.org/ontology/domain/ontobdc/ns.ttl#identifier> \"{identifier}\" ;\n"
                 f"    <{INFOBIM_NS}defaultProperty> <{IFCOWL_NS}{property_name}> .\n"
             )
 
         field_links = " ;\n".join(
-            f"    <http://ontobdc.org/ontology/domain/ns.ttl#hasFacadeField> <{INFOBIM_NS}IfcProjectFacadeField{index}>"
+            f"    <http://ontobdc.org/ontology/domain/ontobdc/ns.ttl#hasFacadeField> <{INFOBIM_NS}IfcProjectFacadeField{index}>"
             for index, _ in enumerate(IFC_PROJECT_FIELDS, start=1)
         )
 
         ttl = (
             f"<{IFC_PROJECT_CLASS_URI}>\n"
-            f"    <http://ontobdc.org/ontology/domain/ns.ttl#hasDataEntityFacade> <{IFC_PROJECT_FACADE_URI}> .\n\n"
+            f"    <http://ontobdc.org/ontology/domain/ontobdc/ns.ttl#hasDataEntityFacade> <{IFC_PROJECT_FACADE_URI}> .\n\n"
             f"<{IFC_PROJECT_FACADE_URI}>\n{field_links} .\n\n"
             + "\n".join(field_blocks)
         )

@@ -21,7 +21,7 @@ from ontobdc.storage.adapter.bootstrap import (
 from ontobdc.storage.adapter.machine import DatasetCreateStateTransitionHandler
 
 
-OBDC = Namespace("http://ontobdc.org/ontology/domain/ns.ttl#")
+OBDC = Namespace("http://ontobdc.org/ontology/domain/ontobdc/ns.ttl#")
 
 
 @dataclass(frozen=True)

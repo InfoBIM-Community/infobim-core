@@ -10,8 +10,14 @@ ifc_model_tile:
   elements: "Elementos"
 
 ifc_work_schedule_tile:
-  eyebrow: "Cronograma IFC"
+  eyebrow: "IFC Work Schedule"
   fallbackTitle: "IfcWorkSchedule"
+  openView: "Abrir vista del cronograma"
+  badge: "cronograma"
+  conformsToLabel: "Se ajusta a"
+  expand: "Expandir"
+  collapse: "Contraer"
+  noDetailsToShow: "Sin detalles para mostrar"
 
 project_tile:
   eyebrow: "InfoBIM · IfcProject"

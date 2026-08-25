@@ -16,7 +16,7 @@ from openpyxl import load_workbook
 from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import PROV, RDF
 
-OBDC = Namespace("http://ontobdc.org/ontology/domain/ns.ttl#")
+OBDC = Namespace("http://ontobdc.org/ontology/domain/ontobdc/ns.ttl#")
 
 
 @dataclass(frozen=True)

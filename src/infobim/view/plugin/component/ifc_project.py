@@ -18,7 +18,7 @@ class IfcProjectTileComponent(ComponentPort):
         supported_languages=["en", "pt-BR", "pt-PT", "es"],
         min_columns=6,
         max_columns=12,
-        min_rows=7,
+        min_rows=5,
         max_rows=7,
         size_property=str(DCTERMS.title),
         chars_per_column=8,

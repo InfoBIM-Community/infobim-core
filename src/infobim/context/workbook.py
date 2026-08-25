@@ -140,6 +140,7 @@ class EntityContextWorkbookAdapter:
         resources: List[Dict[str, Any]],
     ) -> None:
         descriptor: Dict[str, Any] = {}
+        datapackage_path.parent.mkdir(parents=True, exist_ok=True)
         if datapackage_path.is_file():
             try:
                 descriptor = json.loads(

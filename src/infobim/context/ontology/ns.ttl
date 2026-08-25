@@ -1,13 +1,13 @@
 @prefix ibim: <https://infobim.org/ontology/ns#> .
 @prefix ifcowl: <https://standards.buildingsmart.org/IFC/DEV/IFC4_3/OWL#> .
-@prefix obdc: <http://ontobdc.org/ontology/domain/ns.ttl#> .
+@prefix obdc: <http://ontobdc.org/ontology/domain/ontobdc/ns.ttl#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 ibim:IfcWorkSchedule
     a owl:Class, obdc:SurfaceableEntity ;
     rdfs:subClassOf obdc:DataEntity, ifcowl:IfcWorkSchedule ;
-    ibim:assignsRelatedClass ifcowl:IfcTask, ifcowl:IfcTaskTime ;
+    ibim:assignsRelatedClass ifcowl:IfcTask, ifcowl:IfcTaskTime, ifcowl:IfcRelSequence ;
     rdfs:label "IFC Work Schedule"@en, "Cronograma IFC"@pt-BR .
 
 ibim:assignsRelatedClass
