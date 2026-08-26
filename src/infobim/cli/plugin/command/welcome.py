@@ -1,16 +1,14 @@
 from typing import List
 
+from ontobdc.cli.adapter.tree import CommandTreeAdapter
 from ontobdc.cli.domain.model.command import CliCommandMetadata
 from ontobdc.cli.domain.port.command import CliCommandPort
 from ontobdc.cli.domain.request.command import CliCommandRequest
 from ontobdc.cli.domain.response.command import HelpCommandResponse
 
-from infobim import __version__
-from infobim.cli.adapter.help import build_command_table, discover_logical_components
-
 
 class InfoBIMWelcomeCommand(CliCommandPort):
-    """Bare `infobim` entry point: welcome banner plus every discovered command."""
+    """Base command shown by ``infobim`` with no arguments."""
 
     METADATA = CliCommandMetadata(
         id="welcome",
@@ -23,21 +21,22 @@ class InfoBIMWelcomeCommand(CliCommandPort):
         return not args
 
     def __init__(self, request: CliCommandRequest):
-        self._request = request
+        self._request: CliCommandRequest = request
 
     def check(self) -> bool:
         return not self._request.command_args
 
     def run(self) -> HelpCommandResponse:
-        components = discover_logical_components()
+        command_tree: str = CommandTreeAdapter(
+            root_package="infobim",
+            executable="infobim",
+            excluded_command_ids=("welcome",),
+        ).render()
         return HelpCommandResponse(
-            title="InfoBIM",
-            description=(
-                "BIM/OpenBIM domain layer built on OntoBDC.\n"
-                f"Version: {__version__}"
-            ),
+            title="InfoBIM Commands",
+            description="Available commands and options.",
             content={
-                "Usage": ["infobim <command> [flags/parameters]"],
-                "Commands": build_command_table(components),
+                "Usage": "infobim <command> [flags/parameters]",
+                "Commands": command_tree,
             },
         )

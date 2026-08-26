@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 from importlib.resources import files
-from typing import Dict, List, Type
+from pathlib import Path
+from typing import Dict, List, Optional, Type
 
 from infobim.view.adapter.i18n import catalog_for_namespace
 from infobim.view.plugin.component.ifc_model import IfcModelTileComponent
@@ -53,8 +54,34 @@ class InfoBIMComponentSourceAdapter:
         "onto-infobim-ifc-work-schedule-tile.js",
     )
 
-    def scripts(self) -> List[str]:
+    def scripts(self, root_path: Optional[str] = None) -> List[str]:
+        """Return component script sources for the surface.
+
+        ``root_path`` is forwarded onto every ``ontobdc_view.component_source``
+        call so branded tiles (``onto-logo-tile``, etc.) can discover the
+        correct product-level SVGs on disk (InfoBIM vs OntoBDC defaults)
+        even when the surface is generated for a nested per-project
+        container whose assets live in a super-project/workspace root
+        above it.
+
+        ``root_path`` may be ``None`` -- the view layer is defensive and
+        falls back to ``Path.cwd()`` with a parent-walk in that case -- but
+        callers (``ViewProjectCommand.run``) are encouraged to pass the
+        resolved ``project_path``/``container_path`` when known for more
+        predictable behaviour on shell-less/daemon environments where
+        ``cwd`` may not equal the project workspace.
+        """
         import ontobdc_view
+
+        try:
+            if isinstance(root_path, str) and root_path.strip():
+                resolved_root: Optional[str] = str(
+                    Path(root_path).expanduser().resolve()
+                )
+            else:
+                resolved_root = str(Path.cwd().resolve())
+        except (OSError, ValueError):
+            resolved_root = None
 
         tags = {"onto-presentation-surface"}
         tags.update(
@@ -64,7 +91,7 @@ class InfoBIMComponentSourceAdapter:
 
         scripts: List[str] = []
         for tag in sorted(tags):
-            source = ontobdc_view.component_source(tag)
+            source = ontobdc_view.component_source(tag, root_path=resolved_root)
             if isinstance(source, str) and source.strip():
                 scripts.append(source)
                 continue

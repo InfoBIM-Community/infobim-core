@@ -28,10 +28,11 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 from ontobdc.cli.adapter.command import CliCommandRunAdapter
 from ontobdc.cli.adapter.loader import ResponseWidgetAdapterLoader
 from ontobdc.cli.adapter.logger import InLineLogger, NullLogRepository
+from ontobdc.cli.adapter.terminal import prompt_choice
 from ontobdc.cli.domain.exception.command import CliCommandArgumentException
 from ontobdc.cli.domain.model.logger import LogLevel, LogStrategyConfig
 from ontobdc.cli.domain.port.command import CliCommandPort
-from ontobdc.cli.domain.port.context import CliContextPort
+from ontobdc.cli.domain.port.context import CliContextPort, PromptChoiceAwarePort
 from ontobdc.cli.domain.port.logger import LoggerAwarePort, LogRepositoryPort
 from ontobdc.cli.domain.response.command import CommandResponse, ExceptionCommandResponse
 from ontobdc.shared.adapter.loader import CommandLoader
@@ -129,6 +130,9 @@ def main(argv: Sequence[str] | None = None) -> None:
                 log_strategy_kwargs["log_level"] = resolved_log_level
             log_strategy = LogStrategyConfig(**log_strategy_kwargs)
             command.set_log_strategy(log_strategy)
+
+        if isinstance(command, PromptChoiceAwarePort):
+            command.set_prompt_choice(prompt_choice)
 
         response: CommandResponse = command.run()
         if not silent:

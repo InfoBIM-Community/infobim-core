@@ -26,13 +26,21 @@ class ProjectListCommand(CliCommandPort):
 
     @staticmethod
     def accepts(args: List[str]) -> bool:
-        return args in (["project", "--list"], ["project", "-l"])
+        return args in (
+            ["project"],
+            ["project", "--list"],
+            ["project", "-l"],
+        )
 
-    def __init__(self, request: CliCommandRequest):
-        self._request = request
+    def __init__(self, request: CliCommandRequest) -> None:
+        self._request: CliCommandRequest = request
 
     def check(self) -> bool:
-        return list(self._request.command_args) in (["--list"], ["-l"])
+        return list(self._request.command_args) in (
+            [],
+            ["--list"],
+            ["-l"],
+        )
 
     def run(self) -> CommandResponse:
         # Imported here, not at module level -- see the identical note in

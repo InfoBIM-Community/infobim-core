@@ -181,7 +181,7 @@ class ViewProjectCommand(CliCommandPort):
 
         self._request.context.set_parameter_value(
             "surface_component_scripts",
-            InfoBIMComponentSourceAdapter().scripts(),
+            InfoBIMComponentSourceAdapter().scripts(root_path=project_path),
         )
         response = InfoBIMSurfaceGenerationStateTransitionHandler(
             context=self._request.context,
