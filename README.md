@@ -120,14 +120,15 @@ dataset exposes and are used to discover the relevant datasets and classes.
 ### 4. BIM tiles on the Presentation Surface
 
 When `infobim view` runs it injects InfoBIM domain-specific web components
-into the static Surface HTML. The currently implemented components include:
+into the static Surface HTML. The default Surface includes:
 
 - a **Project header tile** — semantic IfcProject header (GlobalId, name,
   description, IFC schema, project-level metrics);
-- an **IFC model tile** — browsable distributed IFC model (classes → elements →
-  element details);
 - a **Work schedule tile** — browser for `IfcWorkSchedule` context instances
   attached to the project.
+
+The **Distributed IFC** component remains implemented and available for
+explicit use, but is not selected by the default InfoBIM Surface.
 
 The set of InfoBIM tiles is extensible; the README does not treat the current
 number of components as part of the architectural contract.
@@ -211,6 +212,8 @@ is cataloged in
 | Drill into a single element by GlobalId | `infobim ifc --project-id <id> --element <ElemGlobalId>` |
 | Browse the full entity catalog | `infobim context --entity --all` |
 | Create a full workbook-backed `IfcWorkSchedule` | `infobim context --create "Name" --entity IfcWorkSchedule --project-id <id>` |
+| Record 4D tasks and progress in the mapped workbook | `infobim 4d --task [--container <path>]` |
+| Export the mapped 4D Gantt as a paginated PDF | `infobim 4d --pdf [--container <path>] [--out <file.pdf>]` |
 | Generate + open Project Surface | `infobim view` (inside project) or `--project-id <id>` |
 
 ---
@@ -222,6 +225,7 @@ infobim/ (this package)
 ├── src/
 │   ├── infobim/             # active v0.5 distribution package (discovered by CLI loader)
 │   │   ├── cli/             entry-point (welcome / --version / init)
+│   │   ├── 4d/              task entry and Gantt PDF capabilities
 │   │   ├── project/         full lifecycle + ProjectIdStrategy
 │   │   ├── ifc/             IFC operational commands and catalog access
 │   │   ├── context/         entity command + IfcWorkSchedule workbook service

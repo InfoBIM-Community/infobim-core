@@ -12,6 +12,9 @@ from infobim.view.adapter.machine import (
 from infobim.view.adapter.project import (
     InfoBIMProjectPresentationRepository,
 )
+from infobim.view.adapter.regeneration import (
+    InfoBIMSurfaceRegenerationWorkerLauncher,
+)
 from ontobdc.cli.domain.exception.command import CliCommandArgumentException
 from ontobdc.cli.domain.model.command import CliCommandMetadata
 from ontobdc.cli.domain.port.command import CliCommandPort
@@ -194,6 +197,13 @@ class ViewProjectCommand(CliCommandPort):
                 f"{surface_path}."
             )
 
+        regeneration_worker_pid = InfoBIMSurfaceRegenerationWorkerLauncher().ensure_running(
+            project_id=project_id,
+            project_path=project_path,
+            context_root=self._request.context.root_path,
+            language=str(self._context_value("language") or "en"),
+        )
+
         index_uri = surface_path.as_uri()
         browser_opened = False
         runtime_error: Optional[str] = None
@@ -217,6 +227,7 @@ class ViewProjectCommand(CliCommandPort):
             {
                 "project_id": project_id,
                 "project_path": project_path,
+                "regeneration_worker_pid": regeneration_worker_pid,
                 "container_id": self._context_value("container_id"),
                 "view_type": self._context_value("view_type"),
                 "representation": self._context_value("representation"),

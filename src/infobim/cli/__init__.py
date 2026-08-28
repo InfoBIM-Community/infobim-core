@@ -25,6 +25,7 @@ import sys
 from functools import partial
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+from ontobdc.cli import CliParameterValidationOrchestrator
 from ontobdc.cli.adapter.command import CliCommandRunAdapter
 from ontobdc.cli.adapter.loader import ResponseWidgetAdapterLoader
 from ontobdc.cli.adapter.logger import InLineLogger, NullLogRepository
@@ -35,7 +36,7 @@ from ontobdc.cli.domain.port.command import CliCommandPort
 from ontobdc.cli.domain.port.context import CliContextPort, PromptChoiceAwarePort
 from ontobdc.cli.domain.port.logger import LoggerAwarePort, LogRepositoryPort
 from ontobdc.cli.domain.response.command import CommandResponse, ExceptionCommandResponse
-from ontobdc.shared.adapter.loader import CommandLoader
+from ontobdc.shared.adapter.loader import CommandLoader, ParameterLoader
 from ontobdc.shared.domain.port.component import TerminalTileRenderable
 from ontobdc.shared.facade.adapter.logger import (
     clear_active_log_repository,
@@ -90,21 +91,14 @@ def main(argv: Sequence[str] | None = None) -> None:
             incoming_args
         )
 
-        # Apply log threshold *before* exposing the logger through the
-        # global broker so any consumer (including the capability success
-        # logging path and the debug entry / exception paths) reaches an
-        # already-configured instance.  When the user omits --log-level we
-        # still want INFO messages to surface on side-effecting
-        # capabilities, so we default to INFORMATIONAL in that case
-        # instead of the base NOTICE default.
+        # Apply an explicit threshold before exposing the logger through the
+        # global broker. When --log-level is omitted, the repository keeps
+        # LogLevelPolicy.DEFAULT (NOTICE).
         if resolved_log_level is not None:
             _ = LogStrategyConfig(
                 log_level=resolved_log_level,
                 log_repository=logger,
             )
-        else:
-            if hasattr(logger, "set_log_level"):
-                logger.set_log_level(LogLevel.INFORMATIONAL)
 
         set_active_log_repository(logger)
 
@@ -113,6 +107,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 sanitized_incoming_args,
                 logger,
                 loader_class=partial(CommandLoader, root_package="infobim"),
+                defer_check=True,
             )
         except CliCommandArgumentException as error:
             print(str(error), file=sys.stderr)
@@ -123,6 +118,20 @@ def main(argv: Sequence[str] | None = None) -> None:
             context: Optional[CliContextPort] = getattr(request, "context", None)
             if context is not None:
                 context.set_parameter_value("log_level", resolved_log_level)
+
+        parameter_loader: ParameterLoader = ParameterLoader(
+            logger=logger,
+            root_packages=("ontobdc", "infobim"),
+        )
+        parameter_validator: CliParameterValidationOrchestrator = (
+            CliParameterValidationOrchestrator()
+        )
+        parameter_validator.check(
+            command,
+            sanitized_incoming_args,
+            logger,
+            parameter_loader,
+        )
 
         if isinstance(command, LoggerAwarePort):
             log_strategy_kwargs: Dict[str, Any] = {"log_repository": logger}

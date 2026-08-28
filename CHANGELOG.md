@@ -1,12 +1,16 @@
 # Changelog
 
+- Packaged the InfoBIM PNG icon, SVG brand mark and SVG logotype inside the Python distribution. Surface generation now resolves and embeds these installed resources locally, so branding works from a wheel without the source repository or network access.
+
 ## Unreleased
 
 ### Added
 
-- `infobim schedule --task` opens a local screen for recording tasks and progress into the container's schedule workbook — the same workbook the Gantt Surface reads. One logical task is three rows across `IfcTask`, `IfcTaskTime` and `IfcRelSequence`, tied together by GlobalIds; typing those by hand is where a schedule loses data silently, because a mistyped id raises nothing, it just makes the task stop appearing in the Gantt. The command generates the ids and the `FINISH_START` sequence row, so nobody types one.
+- `infobim 4d --task` opens a local screen for recording tasks and progress into the container's schedule workbook — the same workbook the Gantt Surface reads. One logical task is three rows across `IfcTask`, `IfcTaskTime` and `IfcRelSequence`, tied together by GlobalIds; typing those by hand is where a schedule loses data silently, because a mistyped id raises nothing, it just makes the task stop appearing in the Gantt. The command generates the ids and the `FINISH_START` sequence row, so nobody types one.
 
   The workbook and each sheet name come from the container's own `.__ontobdc__/datapackage.json`, never from a search: writing to a file the Surface does not read would be invisible until someone noticed the Gantt was stale. Rows are appended, and columns are matched by header name rather than position, so a workbook authored elsewhere keeps its shape; a column the entry needs but the sheet lacks (`ActualStart` in a schedule that only ever recorded the plan) is added rather than demanded. Progress entry records a finish date at 100% and an actual start on first movement, since a percentage with no dates cannot be compared against the plan.
+
+- `infobim 4d --pdf` exports the datapackage-mapped `IfcWorkSchedule` workbook as a paginated A4 landscape PDF with a task table and matching Gantt chart. It supports both datapackage shapes used by InfoBIM: one resource per worksheet and one `IfcWorkSchedule` resource whose related entities are sheets in the same declared workbook. The output defaults beside the workbook and can be selected with `--out`.
 
 ## v0.6.0
 

@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
+from ontobdc.a3.domain.model.language import A3SupportedLanguages
 from ontobdc.cli.domain.port.context import CliContextPort
 from ontobdc.shared.domain.model.capability import CapabilityMetadata
 from ontobdc.shared.domain.port.capability import TransactionCapabilityPort
@@ -134,7 +135,7 @@ class A3ContainerBoundCapability(A3BaseCapability):
         ),
         author=["http://kb.elias.eng.br/nid/elias.ttl#Elias"],
         tags=["infobim", "a3", "llm", "container", "binding"],
-        supported_languages=["en", "pt-br"],
+        supported_languages=A3SupportedLanguages.list(),
         log_message={
             "info": {
                 "en": "A3 container, element and dimension-property were bound to the CLI context.",
@@ -171,7 +172,7 @@ class A3RoCrateLoadedCapability(A3BaseCapability):
         ),
         author=["http://kb.elias.eng.br/nid/elias.ttl#Elias"],
         tags=["infobim", "a3", "ro-crate", "manifest"],
-        supported_languages=["en", "pt-br"],
+        supported_languages=A3SupportedLanguages.list(),
         log_message={
             "info": {
                 "en": "A3 container RO-Crate manifest was loaded and validated.",
@@ -249,7 +250,7 @@ class A3FilesEnumeratedCapability(A3BaseCapability):
         ),
         author=["http://kb.elias.eng.br/nid/elias.ttl#Elias"],
         tags=["infobim", "a3", "files", "enumeration"],
-        supported_languages=["en", "pt-br"],
+        supported_languages=A3SupportedLanguages.list(),
         log_message={
             "info": {
                 "en": "A3 container files were enumerated and enriched with RO-Crate metadata.",
@@ -376,7 +377,7 @@ class A3LlmEvaluatedCapability(A3BaseCapability):
         ),
         author=["http://kb.elias.eng.br/nid/elias.ttl#Elias"],
         tags=["infobim", "a3", "llm", "claude", "haiku", "sonnet"],
-        supported_languages=["en", "pt-br"],
+        supported_languages=A3SupportedLanguages.list(),
         log_message={
             "info": {
                 "en": "A3 files were evaluated through Claude Haiku/Sonnet.",
@@ -478,7 +479,7 @@ class A3SuggestionsSavedCapability(A3BaseCapability):
         ),
         author=["http://kb.elias.eng.br/nid/elias.ttl#Elias"],
         tags=["infobim", "a3", "persistence", "suggestions"],
-        supported_languages=["en", "pt-br"],
+        supported_languages=A3SupportedLanguages.list(),
         log_message={
             "info": {
                 "en": "A3 LLM file suggestions were persisted in the container.",

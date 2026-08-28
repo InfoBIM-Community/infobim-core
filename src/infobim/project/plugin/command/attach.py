@@ -17,15 +17,21 @@ class ProjectAttachCommand(CliCommandPort):
         description="Attach an imported InfoBIM Project to the current OntoBDC storage root.",
         arguments=[
             {
-                "accepts": ["--project-path"],
+                "accepts": ["--project-path", "--project"],
                 "valued": True,
                 "description": "Filesystem path of the imported InfoBIM Project.",
-                "usage": "infobim project --project-path <path> --attach",
+                "usage": (
+                    "infobim project --project-path <path> --attach | "
+                    "infobim project --project <path> --attach"
+                ),
             },
             {
                 "accepts": ["--attach"],
                 "description": "Attach the imported InfoBIM Project.",
-                "usage": "infobim project --project-path <path> --attach",
+                "usage": (
+                    "infobim project --project-path <path> --attach | "
+                    "infobim project --project <path> --attach"
+                ),
             },
         ],
     )
@@ -35,7 +41,7 @@ class ProjectAttachCommand(CliCommandPort):
         return (
             len(args) == 4
             and args[0] == "project"
-            and args[1] == "--project-path"
+            and args[1] in {"--project-path", "--project"}
             and bool(str(args[2]).strip())
             and args[3] == "--attach"
         )
@@ -45,7 +51,11 @@ class ProjectAttachCommand(CliCommandPort):
 
     def check(self) -> bool:
         args = list(self._request.command_args)
-        if not (len(args) == 3 and args[0] == "--project-path" and args[2] == "--attach"):
+        if not (
+            len(args) == 3
+            and args[0] in {"--project-path", "--project"}
+            and args[2] == "--attach"
+        ):
             return False
         target = Path(str(args[1])).expanduser().resolve()
         if not target.is_dir():

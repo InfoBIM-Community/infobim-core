@@ -39,16 +39,19 @@ class InfoBIMSurfaceMatchedCapability(SurfaceMatchedCapability):
         graph: Graph,
         context: CliContextPort,
     ) -> List[Dict[str, Any]]:
-        requested_resources = [
-            str(context.get_parameter_value("infobim_project_resource") or ""),
-            str(context.get_parameter_value("infobim_ifc_model_resource") or ""),
-        ]
+        project_resource = str(
+            context.get_parameter_value("infobim_project_resource") or ""
+        )
+        # Keep the projection/component available to explicit consumers, but
+        # do not place Distributed IFC on the default InfoBIM Surface.
+        ifc_model_resource = str(
+            context.get_parameter_value("infobim_ifc_model_resource") or ""
+        )
         requests: List[Dict[str, Any]] = []
         seen = set()
-        for resource in requested_resources:
-            if resource and URIRef(resource) in set(graph.subjects()):
-                requests.append({"data": resource, "region": "content"})
-                seen.add(resource)
+        if project_resource and URIRef(project_resource) in set(graph.subjects()):
+            requests.append({"data": project_resource, "region": "content"})
+            seen.add(project_resource)
 
         requests.append(
             {"tileClass": FILE_SIZE_TILE_CLASS_URI, "region": "content"}
@@ -56,7 +59,7 @@ class InfoBIMSurfaceMatchedCapability(SurfaceMatchedCapability):
 
         for request in super()._auto_matched_requests(graph):
             resource = str(request.get("data") or "")
-            if not resource or resource in seen:
+            if not resource or resource in seen or resource == ifc_model_resource:
                 continue
             subject = URIRef(resource)
             types = {
