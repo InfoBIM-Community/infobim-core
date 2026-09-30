@@ -1,0 +1,7 @@
+statechart:
+  name: StandardIfcProductChain
+  description: "Parallel chain that resolves which capability creates the IFC class a run named."
+
+  root state:
+    name: standard_ifc_product_chain
+    parallel states: []

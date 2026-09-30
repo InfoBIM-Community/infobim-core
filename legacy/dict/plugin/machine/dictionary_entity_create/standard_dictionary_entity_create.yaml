@@ -1,0 +1,157 @@
+statechart:
+  name: StandardDictionaryEntityCreate
+  description: "Statechart for defining an InfoBIM element from a dictionary entry."
+
+  root state:
+    name: standard_dictionary_entity_create
+    initial: undefined
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state, before the target IFC model was verified."
+          pt-br: "Estado inicial, antes da verificacao do modelo IFC alvo."
+        transitions:
+          - target: ifc_model_healthy
+            guard: handler.can_transit_to(to_state = DictionaryEntityCreateProcessStatePort.IFC_MODEL_HEALTHY)
+            action: handler.perform_state_transition(to_state = DictionaryEntityCreateProcessStatePort.IFC_MODEL_HEALTHY)
+            contract:
+              - after: handler.validate_state_transition(from_state = DictionaryEntityCreateProcessStatePort.UNDEFINED, to_state = DictionaryEntityCreateProcessStatePort.IFC_MODEL_HEALTHY)
+
+      - name: ifc_model_healthy
+        label:
+          en: "IFC Model Healthy"
+          pt-br: "Modelo IFC Saudavel"
+        description:
+          en: "The target IFC model was resolved or created and can be modified."
+          pt-br: "O modelo IFC alvo foi resolvido ou criado e pode ser modificado."
+        transitions:
+          - target: position_defined
+            guard: handler.can_transit_to(to_state = DictionaryEntityCreateProcessStatePort.POSITION_DEFINED)
+            action: handler.perform_state_transition(to_state = DictionaryEntityCreateProcessStatePort.POSITION_DEFINED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DictionaryEntityCreateProcessStatePort.IFC_MODEL_HEALTHY, to_state = DictionaryEntityCreateProcessStatePort.POSITION_DEFINED)
+
+      - name: position_defined
+        label:
+          en: "Position Defined"
+          pt-br: "Posicao Definida"
+        description:
+          en: "The position this run places the defined element at is defined."
+          pt-br: "A posicao em que esta execucao coloca o elemento definido esta definida."
+        transitions:
+          - target: element_identified
+            guard: handler.can_transit_to(to_state = DictionaryEntityCreateProcessStatePort.ELEMENT_IDENTIFIED)
+            action: handler.perform_state_transition(to_state = DictionaryEntityCreateProcessStatePort.ELEMENT_IDENTIFIED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DictionaryEntityCreateProcessStatePort.POSITION_DEFINED, to_state = DictionaryEntityCreateProcessStatePort.ELEMENT_IDENTIFIED)
+
+      - name: element_identified
+        label:
+          en: "Element Identified"
+          pt-br: "Elemento Identificado"
+        description:
+          en: "The element the dictionary defines carries the identity the project's own rule gives it."
+          pt-br: "O elemento definido pelo dicionario carrega a identidade dada pela regra do proprio projeto."
+        transitions:
+          - target: dictionary_entry_downloaded
+            guard: handler.can_transit_to(to_state = DictionaryEntityCreateProcessStatePort.DICTIONARY_ENTRY_DOWNLOADED)
+            action: handler.perform_state_transition(to_state = DictionaryEntityCreateProcessStatePort.DICTIONARY_ENTRY_DOWNLOADED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DictionaryEntityCreateProcessStatePort.ELEMENT_IDENTIFIED, to_state = DictionaryEntityCreateProcessStatePort.DICTIONARY_ENTRY_DOWNLOADED)
+
+      - name: dictionary_entry_downloaded
+        label:
+          en: "Dictionary Entry Downloaded"
+          pt-br: "Verbete do Dicionario Baixado"
+        description:
+          en: "The dictionary entry the URI names was retrieved and stored in the project's state."
+          pt-br: "O verbete do dicionario indicado pela URI foi obtido e guardado no estado do projeto."
+        transitions:
+          - target: entity_definition_read
+            guard: handler.can_transit_to(to_state = DictionaryEntityCreateProcessStatePort.ENTITY_DEFINITION_READ)
+            action: handler.perform_state_transition(to_state = DictionaryEntityCreateProcessStatePort.ENTITY_DEFINITION_READ)
+            contract:
+              - after: handler.validate_state_transition(from_state = DictionaryEntityCreateProcessStatePort.DICTIONARY_ENTRY_DOWNLOADED, to_state = DictionaryEntityCreateProcessStatePort.ENTITY_DEFINITION_READ)
+
+      - name: entity_definition_read
+        label:
+          en: "Entity Definition Read"
+          pt-br: "Definicao da Entidade Lida"
+        description:
+          en: "The definitions the dictionary entry declares are read and bound to this run."
+          pt-br: "As definicoes declaradas pelo verbete do dicionario foram lidas e vinculadas a esta execucao."
+        transitions:
+          - target: geometry_defined
+            guard: handler.can_transit_to(to_state = DictionaryEntityCreateProcessStatePort.GEOMETRY_DEFINED)
+            action: handler.perform_state_transition(to_state = DictionaryEntityCreateProcessStatePort.GEOMETRY_DEFINED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DictionaryEntityCreateProcessStatePort.ENTITY_DEFINITION_READ, to_state = DictionaryEntityCreateProcessStatePort.GEOMETRY_DEFINED)
+
+      - name: geometry_defined
+        label:
+          en: "Geometry Defined"
+          pt-br: "Geometria Definida"
+        description:
+          en: "The primitive the dictionary describes for the element is completely defined."
+          pt-br: "A primitiva descrita pelo dicionario para o elemento esta completamente definida."
+        transitions:
+          - target: geometry_created
+            guard: handler.can_transit_to(to_state = DictionaryEntityCreateProcessStatePort.GEOMETRY_CREATED)
+            action: handler.perform_state_transition(to_state = DictionaryEntityCreateProcessStatePort.GEOMETRY_CREATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DictionaryEntityCreateProcessStatePort.GEOMETRY_DEFINED, to_state = DictionaryEntityCreateProcessStatePort.GEOMETRY_CREATED)
+
+      - name: geometry_created
+        label:
+          en: "Geometry Created"
+          pt-br: "Geometria Criada"
+        description:
+          en: "The corresponding IFC geometry exists in the project's state."
+          pt-br: "A geometria IFC correspondente existe no estado do projeto."
+        transitions:
+          - target: shape_representation_created
+            guard: handler.can_transit_to(to_state = DictionaryEntityCreateProcessStatePort.SHAPE_REPRESENTATION_CREATED)
+            action: handler.perform_state_transition(to_state = DictionaryEntityCreateProcessStatePort.SHAPE_REPRESENTATION_CREATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DictionaryEntityCreateProcessStatePort.GEOMETRY_CREATED, to_state = DictionaryEntityCreateProcessStatePort.SHAPE_REPRESENTATION_CREATED)
+
+      - name: shape_representation_created
+        label:
+          en: "Shape Representation Created"
+          pt-br: "Representacao de Forma Criada"
+        description:
+          en: "The IFC shape representation of the created geometry exists."
+          pt-br: "A representacao de forma IFC da geometria criada existe."
+        transitions:
+          - target: geometric_product_created
+            guard: handler.can_transit_to(to_state = DictionaryEntityCreateProcessStatePort.GEOMETRIC_PRODUCT_CREATED)
+            action: handler.perform_state_transition(to_state = DictionaryEntityCreateProcessStatePort.GEOMETRIC_PRODUCT_CREATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DictionaryEntityCreateProcessStatePort.SHAPE_REPRESENTATION_CREATED, to_state = DictionaryEntityCreateProcessStatePort.GEOMETRIC_PRODUCT_CREATED)
+
+      - name: geometric_product_created
+        label:
+          en: "Geometric Product Created"
+          pt-br: "Produto Geometrico Criado"
+        description:
+          en: "The IFC element the dictionary defines exists and carries the created representation."
+          pt-br: "O elemento IFC definido pelo dicionario existe e carrega a representacao criada."
+        transitions:
+          - target: geometric_product_federated
+            guard: handler.can_transit_to(to_state = DictionaryEntityCreateProcessStatePort.GEOMETRIC_PRODUCT_FEDERATED)
+            action: handler.perform_state_transition(to_state = DictionaryEntityCreateProcessStatePort.GEOMETRIC_PRODUCT_FEDERATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DictionaryEntityCreateProcessStatePort.GEOMETRIC_PRODUCT_CREATED, to_state = DictionaryEntityCreateProcessStatePort.GEOMETRIC_PRODUCT_FEDERATED)
+
+      - name: geometric_product_federated
+        label:
+          en: "Geometric Product Federated"
+          pt-br: "Produto Geometrico Federado"
+        description:
+          en: "The project's IFC model carries the element the dictionary defines, placed in its spatial structure."
+          pt-br: "O modelo IFC do projeto carrega o elemento definido pelo dicionario, colocado em sua estrutura espacial."
+        type: final

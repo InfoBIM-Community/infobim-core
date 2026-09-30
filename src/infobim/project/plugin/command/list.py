@@ -1,91 +1,110 @@
-from pathlib import Path
-from typing import Any, Dict, List
+from typing import ClassVar, Dict, List, Optional
 
-from infobim.project.plugin.parameter.project import ProjectIdStrategy
-from ontobdc.cli.domain.model.command import CliCommandMetadata
 from ontobdc.cli.domain.port.command import CliCommandPort
+from ontobdc.cli.domain.model.command import CliCommandMetadata
 from ontobdc.cli.domain.request.command import CliCommandRequest
-from ontobdc.cli.domain.response.command import CommandResponse
+from ontobdc.cli.domain.response.command import (
+    CommandResponse,
+    ExceptionCommandResponse,
+    ListCommandResponse,
+)
+from infobim.project.adapter.contract import ProjectGuard
 
 
 class ProjectListCommand(CliCommandPort):
-    """List registered OntoBDC containers that satisfy the InfoBIM Project contract."""
+    """
+    Lists the registered InfoBIM projects.
 
-    METADATA = CliCommandMetadata(
+    Single responsibility: enumerate storage containers matching the
+    InfoBIM Project contract. Listing is the one place where the
+    contract cannot be enforced by refusing: a registered container
+    that is not a project is not an error, it simply is not a project,
+    and belongs out of the answer rather than in an exception.
+
+    Component-command inventory (the default ``infobim project``
+    behaviour) lives in ``ProjectComponentBaseCommand`` in ``base.py``,
+    never here — one class = one concern.
+    """
+
+    METADATA: CliCommandMetadata = CliCommandMetadata(
         id="project_list",
         logical_component="project",
-        description="List registered InfoBIM Projects.",
+        description="List every storage container registered as an InfoBIM Project.",
+        depends_on=None,
         arguments=[
             {
-                "accepts": ["--list", "-l"],
-                "description": "List registered InfoBIM Projects.",
-                "usage": "infobim project --list",
-            }
+                "accepts": [
+                    "--list",
+                    "-l",
+                ],
+                "description": (
+                    "Print the list of every storage container currently "
+                    "registered as an InfoBIM Project. Containers that do "
+                    "not match the Project contract are excluded from the "
+                    "result instead of being reported as errors."
+                ),
+            },
         ],
     )
 
+    COMPONENT: ClassVar[str] = "project"
+    LIST_FLAGS: ClassVar[List[str]] = ["--list", "-l"]
+
     @staticmethod
     def accepts(args: List[str]) -> bool:
-        return args in (
-            ["project"],
-            ["project", "--list"],
-            ["project", "-l"],
-        )
+        """
+        Match ``infobim project [--list|-l]`` at the CLI routing stage.
+
+        ``--list`` / ``-l`` is required here; bare ``project`` belongs
+        to the component help command and is explicitly rejected so
+        matchers stay mutually exclusive.
+        """
+        if not args or args[0] != ProjectListCommand.COMPONENT:
+            return False
+
+        if not any(flag in args for flag in ProjectListCommand.LIST_FLAGS):
+            return False
+
+        remaining: List[str] = [
+            arg for arg in args
+            if arg != ProjectListCommand.COMPONENT
+            and arg not in ProjectListCommand.LIST_FLAGS
+        ]
+        return not remaining
 
     def __init__(self, request: CliCommandRequest) -> None:
         self._request: CliCommandRequest = request
 
     def check(self) -> bool:
-        return list(self._request.command_args) in (
-            [],
-            ["--list"],
-            ["-l"],
+        command_args: List[str] = self._request.command_args
+        return (
+            len(command_args) == 1
+            and command_args[0] in self.LIST_FLAGS
         )
 
     def run(self) -> CommandResponse:
-        # Imported here, not at module level -- see the identical note in
-        # context/plugin/command/entity.py.
-        from ontobdc.storage.plugin.command.base import StorageBaseCommand
-
-        proxy_request = CliCommandRequest(
-            logical_component="storage",
-            component_action=StorageBaseCommand.METADATA.id,
-            command_args=["--list"],
-            context=self._request.context,
-        )
-        proxy = StorageBaseCommand(proxy_request)
-        if not proxy.check():
-            raise ValueError("Underlying OntoBDC storage list command rejected the request.")
-        response = proxy.run()
-
-        raw_containers = (
-            response.content.get("containers", [])
-            if isinstance(response.content, dict)
-            else []
-        )
-
-        # Not every registered OntoBDC container is an InfoBIM Project --
-        # only those carrying a valid reserved IfcProject dataset qualify;
-        # everything else is silently excluded from this listing.
-        projects: List[Dict[str, Any]] = []
-        for container in raw_containers:
-            container_path = str(container.get("location") or "").strip()
-            if not container_path:
-                continue
-            project_id = ProjectIdStrategy._project_id_for_container(Path(container_path))
-            if project_id is None:
-                continue
-
-            projects.append(
-                {
-                    "project_id": project_id,
-                    "container_id": str(container.get("id") or "").strip(),
-                    "project_path": container_path,
-                }
+        """
+        List every registered container that satisfies the Project contract.
+        """
+        try:
+            projects: List[Dict[str, Optional[str]]] = (
+                ProjectGuard.registered_projects(
+                    self._request.context.root_path,
+                )
             )
 
-        return CommandResponse(
+        except Exception as error:
+            return ExceptionCommandResponse(
+                title="Failed to List Projects",
+                description=(
+                    f"An error occurred while reading the storage index: "
+                    f"{error}"
+                ),
+                content={"projects": [], "error": str(error)},
+            )
+
+        return ListCommandResponse(
             title="InfoBIM Projects",
-            description=f"Found {len(projects)} registered InfoBIM Project(s).",
+            description=f"Found {len(projects)} project(s) in the storage.",
             content={"projects": projects},
         )

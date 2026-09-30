@@ -1,0 +1,36 @@
+statechart:
+  name: StandardInfoBIMDwgToDxf
+  label:
+    en: "InfoBIM DWG to DXF"
+    pt-br: "DWG para DXF InfoBIM"
+  description:
+    en: "Convert the requested DWG file into a DXF payload cached under the project's reserved InfoBIM dataset."
+    pt-br: "Converte o arquivo DWG solicitado em um payload DXF armazenado no dataset reservado InfoBIM do projeto."
+
+  root state:
+    name: standard_dwg_to_dxf
+    initial: undefined
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state before the DWG file is converted."
+          pt-br: "Estado inicial antes da conversão do arquivo DWG."
+        transitions:
+          - target: dwg_converted_to_dxf
+            guard: handler.can_transit_to(to_state = DwgToDxfProcessStatePort.DWG_CONVERTED_TO_DXF)
+            action: handler.perform_state_transition(to_state = DwgToDxfProcessStatePort.DWG_CONVERTED_TO_DXF)
+            contract:
+              - after: handler.validate_state_transition(from_state = DwgToDxfProcessStatePort.UNDEFINED, to_state = DwgToDxfProcessStatePort.DWG_CONVERTED_TO_DXF)
+
+      - name: dwg_converted_to_dxf
+        type: final
+        label:
+          en: "DWG Converted to DXF"
+          pt-br: "DWG Convertido para DXF"
+        description:
+          en: "The DWG file was converted into a DXF file named by the SHA-256 of the DWG content, under .__infobim__/payload/document/etl/format/dwg/dxf/."
+          pt-br: "O arquivo DWG foi convertido em um arquivo DXF nomeado pelo SHA-256 do conteúdo do DWG, em .__infobim__/payload/document/etl/format/dwg/dxf/."

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--    # (C) buildingSMART International -->
+<!--    # published under MIT license -->
+
+<head>
+    <meta charset="UTF-8">
+    <title>InfoBIM 3D</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src data: blob: http://127.0.0.1:8765; worker-src blob:;">
+    <style>
+        :root {
+            --panel-bg: #eee;
+            --panel-fg: #111;
+            --header-bg: #666;
+            --header-fg: #fff;
+            --header-border: #555;
+            --section-bg: #aaa;
+            --section-fg: #fff;
+            --section-border: #888;
+            --border: #ddd;
+            --border-strong: #ccc;
+            --input-bg: #eee;
+            --button-bg: #ddd;
+            --footer-bg: #fff;
+            --link-fg: #000;
+            --terminal-error-fg: #b71c1c;
+            --terminal-accent: #007b91;
+            --terminal-divider: #fff;
+        }
+
+        body.dark {
+            --panel-bg: #1e1e1e;
+            --panel-fg: #ddd;
+            --header-bg: #111;
+            --header-fg: #eee;
+            --header-border: #000;
+            --section-bg: #333;
+            --section-fg: #eee;
+            --section-border: #444;
+            --border: #444;
+            --border-strong: #555;
+            --input-bg: #2a2a2a;
+            --button-bg: #333;
+            --footer-bg: #181818;
+            --link-fg: #ddd;
+            --terminal-error-fg: #e57373;
+            --terminal-accent: #00b8d4;
+            --terminal-divider: var(--section-border);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body>div>div {
+            background: var(--panel-bg);
+            color: var(--panel-fg);
+            overflow-y: scroll;
+        }
+
+        .container {
+            display: grid;
+            grid-template-rows: 3em 1fr 1fr 1fr 2em;
+            grid-template-columns: 1fr 2fr;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .layers {
+            grid-row: 2;
+            grid-column: 1;
+        }
+
+        .layers form {
+            margin: 0.5em;
+        }
+
+        .layers div div {
+            overflow-wrap: anywhere;
+            padding: 0.2em 0.5em;
+            border: solid 1px var(--border-strong);
+            border-radius: 2px;
+            margin: 4px;
+        }
+
+        .layers div div span {
+            border-radius: 2px;
+            border: solid 1px var(--border);
+            display: block;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            float: right;
+            margin-left: 0.3em;
+            cursor: pointer;
+        }
+
+        .layers div div span:hover {
+            border-color: var(--border-strong);
+            background-color: var(--border);
+        }
+
+        .tree-container {
+            grid-row: 3;
+            grid-column: 1;
+        }
+
+        .tree {
+            padding: 0.5em;
+            font-size: 0.8em;
+        }
+
+        .tree-row {
+            cursor: pointer;
+            white-space: nowrap;
+            line-height: 24px;
+            border-top: solid 1px var(--border);
+        }
+
+        .tree-connector,
+        .tree-toggle {
+            font-family: "Courier New", Courier, monospace;
+            white-space: pre;
+        }
+
+        .tree-toggle {
+            display: inline-block;
+            width: 1.2em;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .tree-toggle.tree-toggle-empty {
+            cursor: default;
+        }
+
+        .tree-children[hidden] {
+            display: none;
+        }
+
+        .tree-row.selected {
+            background-color: rgba(255, 255, 0, 0.3);
+        }
+
+        .tree .material-symbols-outlined {
+            vertical-align: -6px;
+            margin-left: 0.5em;
+        }
+
+        .tree-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 0.4em;
+        }
+
+        .tree-tabs {
+            display: flex;
+            gap: 0.2em;
+        }
+
+        .tree-tab {
+            height: auto !important;
+            padding: 0.2em 0.5em !important;
+            font-size: 0.85em;
+            line-height: 1.4;
+            border: none;
+            border-bottom: solid 2px transparent;
+            border-radius: 0;
+            background: none;
+            color: var(--panel-fg);
+            cursor: pointer;
+        }
+
+        .tree-tab.active {
+            border-bottom-color: var(--terminal-accent);
+            font-weight: bold;
+        }
+
+        .tree-toolbar-button {
+            height: auto !important;
+            padding: 0.1em 0.4em !important;
+            font-size: 1em;
+            line-height: 1.4;
+            border-radius: 2px;
+        }
+
+        .inspect-tree {
+            padding: 0.5em;
+            font-size: 0.8em;
+        }
+
+        #tree-collapse-all, #inspect-collapse-all {
+            margin-left: auto;
+        }
+
+        .viewport {
+            grid-row: 2 / 4;
+            grid-column: 2;
+            background: linear-gradient(#80a1c2, var(--panel-bg));
+        }
+
+        body.dark .viewport {
+            background: #000;
+        }
+
+        .bottom-panels {
+            grid-row: 4;
+            grid-column: 1 / 3;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .bottom-panels > div {
+            min-width: 0;
+            overflow: auto;
+        }
+
+        /* The terminal follows the viewer's own light/dark theme, like
+           every other panel; only the CLI output text keeps its own real
+           ANSI colors (see ansi.ts), rendered on top of this background. */
+        .terminal {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            background: var(--panel-bg);
+            color: var(--panel-fg);
+            border-left: 5px solid var(--terminal-divider);
+        }
+
+        .terminal-status {
+            padding: 0.5em 1em;
+            font-size: 0.8em;
+        }
+
+        .terminal-status::before {
+            content: "\25CF";
+            margin-right: 0.5em;
+            color: #9ca3af;
+        }
+
+        .terminal-status.terminal-status-connecting::before {
+            color: #ffcc4d;
+        }
+
+        .terminal-status.terminal-status-connected::before {
+            color: #22c55e;
+        }
+
+        .terminal-status.terminal-status-offline::before {
+            color: #9ca3af;
+        }
+
+        .terminal-error {
+            margin: 0.5em 1em;
+            padding: 1em;
+            min-width: 0;
+            border: 1px solid var(--terminal-error-fg);
+            background: var(--panel-bg);
+            color: var(--panel-fg);
+            overflow-wrap: anywhere;
+        }
+
+        .terminal-error, .terminal-error *, .terminal-output {
+            font-family: monospace;
+        }
+
+        .terminal-error legend {
+            padding: 0 0.5em;
+            color: var(--panel-fg);
+            font-weight: bold;
+        }
+
+        .terminal-error legend span {
+            color: var(--terminal-accent);
+        }
+
+        .terminal-error-title {
+            color: var(--terminal-error-fg);
+        }
+
+        .terminal-error p {
+            margin-top: 1em;
+        }
+
+        .terminal-screen {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .terminal-prompt {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            cursor: text;
+            padding: 0.5em 1em;
+            color: var(--panel-fg);
+        }
+
+        .terminal-prompt, .terminal-prompt * {
+            font-family: monospace;
+        }
+
+        .terminal .terminal-input, .terminal .terminal-input:focus {
+            outline: none;
+            box-shadow: none;
+            border-radius: 0;
+            padding: 0;
+            height: auto;
+            appearance: none;
+            flex: 1;
+            min-width: 0;
+            caret-color: var(--panel-fg);
+            background: transparent;
+            color: var(--panel-fg);
+            border: none;
+            font: inherit;
+        }
+
+        .terminal-output {
+            padding: 0 1em;
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .tree-ref-link {
+            text-decoration: none;
+            color: var(--link-fg);
+            border-bottom: dotted 1px gray;
+        }
+
+        .tree-ref-link::before {
+            content: "\01F517";
+        }
+
+        .header {
+            grid-row: 1;
+            grid-column: 1 / 3;
+            display: flex;
+            align-items: center;
+            background: var(--header-bg);
+            color: var(--header-fg);
+            border-bottom: solid 1px var(--header-border);
+        }
+
+        .header h1 {
+            font-size: 1em;
+            font-weight: 100;
+            padding-left: 0.5em;
+        }
+
+        .header h1 span {
+            font-size: 50%;
+            opacity: 0.5;
+        }
+
+        .header button {
+            margin-left: auto;
+            margin-right: 0.5em;
+        }
+
+        .footer {
+            grid-row: 5;
+            grid-column: 1 / 3;
+            background: var(--footer-bg);
+            color: var(--panel-fg);
+            text-align: center;
+            font-size: 0.8em;
+            padding: 0.5em;
+        }
+
+        table {
+            border: none;
+            border-collapse: collapse;
+        }
+
+        tr>td:first-child {
+            font-weight: bold;
+        }
+
+        td {
+            border-bottom: solid 1px var(--border);
+            vertical-align: top;
+            padding: 0.5em;
+        }
+
+        h2 {
+            background: var(--section-bg);
+            color: var(--section-fg);
+            border: solid 1px var(--section-border);
+            font-size: 0.8em;
+            font-weight: 100;
+            padding: 0.2em 0.5em;
+        }
+
+        input,button {
+            padding: 0.5em !important;
+            border: solid 1px var(--border-strong);
+            background: var(--input-bg);
+            color: var(--panel-fg);
+            display: inline-block;
+            vertical-align: middle;
+            height: 40px;
+        }
+        button {
+            padding: 10px !important;
+            border-radius: 0 5px 5px 0;
+            background-color: var(--button-bg);
+        }
+        input {
+            width: 70%;
+            border-radius: 5px 0 0 5px;
+            border-width: 1px 0 1px 1px;
+        }
+        input[type=text] {
+            padding: 9px 0.5em !important;
+        }
+
+        .error-modal {
+            display: none;
+            position: absolute;
+            left: 15vw;
+            right: 15vw;
+            top: 15vw;
+            bottom: 15vw;
+            border: solid 2px red;
+            background-color: #fee;
+            cursor: pointer;
+            font-size: 150%;
+        }
+
+        .error-modal .message {
+            padding: 5vw;
+            display: inline-block;
+        }
+
+        .error-modal .message::before {
+            content: '\26A0 \A0 \A0';
+        }
+        #warnings { white-space: pre-wrap; padding: 0.5em; color: #733c00; }
+        #warning-details { margin: 0.5em; color: #733c00; }
+        #warning-summary { cursor: pointer; }
+        #status { padding: 0.5em; }
+        #project-id { padding-left: 0.5em; font-size: 0.7em; }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header"><h1>InfoBIM 3D · <span id="project-title">Offline IFCX viewer</span></h1><div id="project-id"></div><button id="theme-toggle" type="button" aria-pressed="false">Dark theme</button></div>
+        <div class='layers'>
+            <h2>IFCX drawings (lower takes priority)</h2>
+            <p id="status" role="status"></p>
+            <div></div>
+            <form id="fileForm">
+                <input type="file" id="fileInput" aria-label="Local IFCX files" accept=".ifcx,.json" multiple required><button class="file-upload-submit" type="submit">view ></button>
+            </form>
+            <details id="warning-details" hidden>
+                <summary id="warning-summary">Conversion warnings</summary>
+                <p id="warnings"></p>
+            </details>
+        </div>
+        <div class='tree-container'>
+            <div class="tree-toolbar">
+                <div class="tree-tabs" role="tablist">
+                    <button type="button" class="tree-tab active" data-tree-tab="model" role="tab" aria-selected="true">Model tree</button>
+                    <button type="button" class="tree-tab" data-tree-tab="attributes" role="tab" aria-selected="false">Selection attributes</button>
+                </div>
+                <button type="button" id="tree-collapse-all" class="tree-toolbar-button" title="Collapse all">&#9656;</button>
+                <button type="button" id="tree-expand-all" class="tree-toolbar-button" title="Expand all">&#9662;</button>
+            </div>
+            <div class='tree'>
+
+            </div>
+        </div>
+        <div class="viewport"></div>
+        <div class="bottom-panels">
+            <div class="inspect">
+                <div class="tree-toolbar">
+                    <div class="tree-tabs" role="tablist">
+                        <button type="button" class="tree-tab active" data-inspect-tab="project" role="tab" aria-selected="true">Project inspect</button>
+                        <button type="button" class="tree-tab" data-inspect-tab="three_d" role="tab" aria-selected="false">3D inspect</button>
+                    </div>
+                    <button type="button" id="inspect-collapse-all" class="tree-toolbar-button" title="Collapse all" aria-label="Collapse all">&#9656;</button>
+                    <button type="button" id="inspect-expand-all" class="tree-toolbar-button" title="Expand all" aria-label="Expand all">&#9662;</button>
+                </div>
+                <div class="inspect-tree"></div>
+            </div>
+            <div class="terminal" data-events-url="http://127.0.0.1:8765/events">
+                <h2>Terminal</h2>
+                <p class="terminal-status" role="status">Connecting…</p>
+                <fieldset class="terminal-error" role="alert" hidden>
+                    <legend>&gt;_ Info<span>BIM</span></legend>
+                    <strong class="terminal-error-title">CONNECTION ERROR</strong>
+                    <p class="terminal-unavailable"></p>
+                    <p><span class="terminal-instruction"></span> <strong><em><code>infobim 3d connect</code></em></strong></p>
+                </fieldset>
+                <div class="terminal-screen" hidden>
+                    <pre class="terminal-output" aria-label="Terminal output"></pre>
+                    <div class="terminal-prompt"><span aria-hidden="true">&gt;_ </span><input class="terminal-input" type="text" autocomplete="off" spellcheck="false"></div>
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            This software is freely available for use, modification, and distribution under the MIT License, provided the original copyright notice and license terms are included.
+            <a href="https://github.com/buildingSMART/IFC5-development/">https://github.com/buildingSMART/IFC5-development/</a>
+        </div>
+        <div class="error-modal" onclick="document.querySelector('.error-modal').style.display = 'none';">
+            <span class="message"></span>
+        </div>
+    </div>
+    <script type="application/json" id="infobim-project">null</script>
+    <!-- INFOBIM_VIEWER_SCRIPT -->
+</body>
+
+</html>

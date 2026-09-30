@@ -7,17 +7,33 @@ name = "infobim"
 authors = [
     { name = "Elias Magalhães", email = "elias@brasidata.com" }
 ]
-version = "0.10.0"
+version = "0.11.0"
 description = "InfoBIM"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "ontobdc>=0.21.0",
-    "ontobdc-view>=0.8.0",
     "openpyxl>=3.1",
     "matplotlib>=3.8",
     "PyYAML>=6.0",
     "textual-datepicker>=0.2.4",
+    "ezdxf>=1.4.4,<2",
+    "ifcopenshell",
+    "PyMuPDF>=1.24",
+    "textual>=8",
+    "textual-image>=0.12",
+    "pillow>=10",
+]
+
+[project.optional-dependencies]
+2d = [
+    "PySide6",
+]
+3d = [
+    "PySide6",
+]
+all = [
+    "infobim[2d,3d]",
 ]
 
 [project.scripts]
@@ -35,6 +51,15 @@ infobim = [
     "context/ontology/*.ttl",
     "view/plugin/asset/js/*.js",
     "view/plugin/asset/image/*",
+    "3d/asset/*.html",
+    "3d/asset/LICENSE.*",
+    "3d/asset/*.md",
+    "3d/asset/*.mjs",
+    "3d/asset/*.json",
+    "3d/asset/source/*.html",
+    "3d/asset/source/**/*.ts",
+    "3d/asset/fixture/*.ifcx",
     "**/*.yaml",
+    "**/*.qml",
     "i18n/locale/*.yaml",
 ]

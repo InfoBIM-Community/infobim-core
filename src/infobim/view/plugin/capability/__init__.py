@@ -1,2 +1,0 @@
-"""InfoBIM presentation capabilities."""
-

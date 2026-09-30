@@ -1,0 +1,56 @@
+statechart:
+  name: IfcSection
+  description: "IFC 3D/native-plan to DXF 2D section pipeline."
+
+  root state:
+    name: ifc_section
+    initial: undefined
+
+    states:
+      - name: undefined
+        transitions:
+          - target: ifc_loaded
+            guard: handler.can_transit_to(to_state = IfcSectionProcessState.IFC_LOADED)
+            action: handler.perform_state_transition(to_state = IfcSectionProcessState.IFC_LOADED)
+            contract:
+              - after: handler.validate_state_transition(from_state = IfcSectionProcessState.UNDEFINED, to_state = IfcSectionProcessState.IFC_LOADED)
+
+      - name: ifc_loaded
+        transitions:
+          - target: representations_inspected
+            guard: handler.can_transit_to(to_state = IfcSectionProcessState.REPRESENTATIONS_INSPECTED)
+            action: handler.perform_state_transition(to_state = IfcSectionProcessState.REPRESENTATIONS_INSPECTED)
+            contract:
+              - after: handler.validate_state_transition(from_state = IfcSectionProcessState.IFC_LOADED, to_state = IfcSectionProcessState.REPRESENTATIONS_INSPECTED)
+
+      - name: representations_inspected
+        transitions:
+          - target: native_plan_extracted
+            guard: handler.has_native_plan()
+            action: handler.perform_state_transition(to_state = IfcSectionProcessState.NATIVE_PLAN_EXTRACTED)
+            contract:
+              - after: handler.validate_state_transition(from_state = IfcSectionProcessState.REPRESENTATIONS_INSPECTED, to_state = IfcSectionProcessState.NATIVE_PLAN_EXTRACTED)
+          - target: body_section_generated
+            guard: handler.has_no_native_plan()
+            action: handler.perform_state_transition(to_state = IfcSectionProcessState.BODY_SECTION_GENERATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = IfcSectionProcessState.REPRESENTATIONS_INSPECTED, to_state = IfcSectionProcessState.BODY_SECTION_GENERATED)
+
+      - name: native_plan_extracted
+        transitions:
+          - target: dxf_written
+            guard: handler.can_transit_to(to_state = IfcSectionProcessState.DXF_WRITTEN)
+            action: handler.perform_state_transition(to_state = IfcSectionProcessState.DXF_WRITTEN)
+            contract:
+              - after: handler.validate_state_transition(from_state = IfcSectionProcessState.NATIVE_PLAN_EXTRACTED, to_state = IfcSectionProcessState.DXF_WRITTEN)
+
+      - name: body_section_generated
+        transitions:
+          - target: dxf_written
+            guard: handler.can_transit_to(to_state = IfcSectionProcessState.DXF_WRITTEN)
+            action: handler.perform_state_transition(to_state = IfcSectionProcessState.DXF_WRITTEN)
+            contract:
+              - after: handler.validate_state_transition(from_state = IfcSectionProcessState.BODY_SECTION_GENERATED, to_state = IfcSectionProcessState.DXF_WRITTEN)
+
+      - name: dxf_written
+        type: final

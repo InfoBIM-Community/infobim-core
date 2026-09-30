@@ -1,42 +1,65 @@
-from typing import List
+from typing import ClassVar, List, Tuple
 
-from ontobdc.cli.adapter.tree import CommandTreeAdapter
 from ontobdc.cli.domain.model.command import CliCommandMetadata
-from ontobdc.cli.domain.port.command import CliCommandPort
 from ontobdc.cli.domain.request.command import CliCommandRequest
 from ontobdc.cli.domain.response.command import HelpCommandResponse
 
+from infobim.cli.plugin.command.base import InfoBIMBaseCommand
 
-class InfoBIMWelcomeCommand(CliCommandPort):
-    """Base command shown by ``infobim`` with no arguments."""
 
-    METADATA = CliCommandMetadata(
+class InfoBIMWelcomeCommand(InfoBIMBaseCommand):
+    """
+    Default / no-arguments command shown by ``infobim``.
+
+    Analogue at dispatch level of ontobdc's ``CliBaseCommand``: this is the
+    concrete class that owns the empty-argument fallback and the global
+    ``--help`` / ``-h`` flags. The shared infrastructure (logger wiring,
+    tree rendering helper, InfoBIM package/executable constants) lives in
+    the parent :class:`InfoBIMBaseCommand` so other commands can reuse it
+    without creating two fallbacks that fight in ``CliCommandRunAdapter``.
+    """
+
+    METADATA: CliCommandMetadata = CliCommandMetadata(
         id="welcome",
         logical_component="cli",
-        description="Display the InfoBIM welcome banner and available commands.",
+        description="Display the InfoBIM commands and options.",
+        depends_on=None,
+        arguments=[
+            {
+                "accepts": [
+                    "hello",
+                ],
+                "description": (
+                    "Explicitly render the InfoBIM command tree. Same as "
+                    "running the bare `infobim` executable, or invoking "
+                    "`infobim --help` / `infobim -h`, but written out as "
+                    "a positional subcommand for discoverability."
+                ),
+            },
+        ],
     )
+
+    EXCLUDED_COMMAND_IDS: ClassVar[Tuple[str, ...]] = ("welcome",)
 
     @staticmethod
     def accepts(args: List[str]) -> bool:
-        return not args
+        """
+        Match the bare executable, or an explicit request for the tree.
+        """
+        if not args:
+            return True
 
-    def __init__(self, request: CliCommandRequest):
-        self._request: CliCommandRequest = request
+        return len(args) == 1 and args[0] in ["--help", "-h"]
 
-    def check(self) -> bool:
-        return not self._request.command_args
+    def __init__(self, request: CliCommandRequest) -> None:
+        super().__init__(request)
 
     def run(self) -> HelpCommandResponse:
-        command_tree: str = CommandTreeAdapter(
-            root_package="infobim",
-            executable="infobim",
-            excluded_command_ids=("welcome",),
-        ).render()
-        return HelpCommandResponse(
+        """
+        List the commands this executable answers to.
+        """
+        return self._render_help_tree(
             title="InfoBIM Commands",
             description="Available commands and options.",
-            content={
-                "Usage": "infobim <command> [flags/parameters]",
-                "Commands": command_tree,
-            },
+            excluded_command_ids=self.EXCLUDED_COMMAND_IDS,
         )

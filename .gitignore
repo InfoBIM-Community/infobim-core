@@ -207,3 +207,6 @@ marimo/_lsp/
 __marimo__/
 
 .DS_Store
+
+# Node.js/npm package install trees, local or nested (e.g. 3D asset deps).
+node_modules/

@@ -1,0 +1,84 @@
+statechart:
+  name: StandardInfoBIMProjectRefresh
+  label:
+    en: "InfoBIM Project Refresh"
+    pt-br: "Atualização de Projeto InfoBIM"
+  description:
+    en: "Statechart for the InfoBIM-specific project refresh stage, which runs ONLY AFTER the standard OntoBDC container refresh state machine has already completed successfully."
+    pt-br: "Statechart para a etapa de atualização específica InfoBIM do projeto. Roda SOMENTE APÓS a state machine padrão de atualização de container do OntoBDC já ter terminado com sucesso."
+
+  root state:
+    name: standard_project_refresh
+    initial: undefined
+    label:
+      en: "InfoBIM Project Refresh"
+      pt-br: "Atualização InfoBIM do Projeto"
+    description:
+      en: "Refreshes the InfoBIM layer on top of an already-refreshed container: first the reserved dataset, then the IfcProject declaration."
+      pt-br: "Atualiza a camada InfoBIM sobre um container já refrescado: primeiro o dataset reservado, depois a declaração de IfcProject."
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state before the refresh stages of the InfoBIM project layer are evaluated."
+          pt-br: "Estado inicial antes das etapas de atualização da camada InfoBIM do projeto serem avaliadas."
+        transitions:
+          - target: project_dataset_refreshed
+            guard: handler.can_transit_to(to_state = ProjectRefreshProcessStatePort.PROJECT_DATASET_REFRESHED)
+            action: handler.perform_state_transition(to_state = ProjectRefreshProcessStatePort.PROJECT_DATASET_REFRESHED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRefreshProcessStatePort.UNDEFINED, to_state = ProjectRefreshProcessStatePort.PROJECT_DATASET_REFRESHED)
+
+      - name: project_dataset_refreshed
+        label:
+          en: "Project Dataset Refreshed"
+          pt-br: "Dataset de Projeto Atualizado"
+        description:
+          en: "The reserved .__infobim__ dataset is re-validated, re-titled and re-indexed against the freshly-refreshed container metadata."
+          pt-br: "O dataset reservado .__infobim__ é re-validado, re-titulado e re-indexado contra os metadados do container recém-refrescado."
+        transitions:
+          - target: ifc_models_refreshed
+            guard: handler.can_transit_to(to_state = ProjectRefreshProcessStatePort.IFC_MODELS_REFRESHED)
+            action: handler.perform_state_transition(to_state = ProjectRefreshProcessStatePort.IFC_MODELS_REFRESHED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRefreshProcessStatePort.PROJECT_DATASET_REFRESHED, to_state = ProjectRefreshProcessStatePort.IFC_MODELS_REFRESHED)
+
+      - name: ifc_models_refreshed
+        label:
+          en: "IfcModels Refreshed"
+          pt-br: "Modelos Ifc Atualizados"
+        description:
+          en: "Every IFC model declared by the project's RO-Crate manifest is re-validated against the five per-model geometric integrity checks: health, units, geometric context, shape-representation context and spatial structure."
+          pt-br: "Cada modelo IFC declarado no manifesto RO-Crate do projeto é re-validado contra os cinco checks de integridade geométrica por modelo: saúde, unidades, contexto geométrico, contexto de representação de forma e estrutura espacial."
+        transitions:
+          - target: ifc_project_refreshed
+            guard: handler.can_transit_to(to_state = ProjectRefreshProcessStatePort.IFC_PROJECT_REFRESHED)
+            action: handler.perform_state_transition(to_state = ProjectRefreshProcessStatePort.IFC_PROJECT_REFRESHED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRefreshProcessStatePort.IFC_MODELS_REFRESHED, to_state = ProjectRefreshProcessStatePort.IFC_PROJECT_REFRESHED)
+
+      - name: ifc_project_refreshed
+        label:
+          en: "IfcProject Refreshed"
+          pt-br: "IfcProject Atualizado"
+        description:
+          en: "The IfcProject declaration and its schema-specific ifcOWL type are re-derived from the IFC files that currently live in the refreshed container."
+          pt-br: "A declaração de IfcProject e seu tipo ifcOWL específico de schema são re-derivados a partir dos arquivos IFC que atualmente vivem no container refrescado."
+        transitions:
+          - target: project_ready_to_render
+            guard: handler.can_transit_to(to_state = ProjectRefreshProcessStatePort.PROJECT_READY_TO_RENDER)
+            action: handler.perform_state_transition(to_state = ProjectRefreshProcessStatePort.PROJECT_READY_TO_RENDER)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRefreshProcessStatePort.IFC_PROJECT_REFRESHED, to_state = ProjectRefreshProcessStatePort.PROJECT_READY_TO_RENDER)
+
+      - name: project_ready_to_render
+        label:
+          en: "Project Ready To Render"
+          pt-br: "Projeto Pronto para Renderização"
+        description:
+          en: "Every DXF/DWG project linkset currently declared under the project's payload/linkset directory is re-validated against the five is_drawing_linked_to_project integrity conditions (source-DWG backlink, ifcOWL IfcDocumentInformation type, globalId_IfcRoot and name_IfcRoot per document)."
+          pt-br: "Cada linkset de projeto DXF/DWG atualmente declarado sob o diretório payload/linkset do projeto é re-validado contra as cinco condições de integridade is_drawing_linked_to_project (backlink para o DWG de origem, tipo ifcOWL IfcDocumentInformation, globalId_IfcRoot e name_IfcRoot por documento)."
+        type: final

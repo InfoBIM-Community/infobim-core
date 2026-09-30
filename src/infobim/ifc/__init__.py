@@ -1,1 +1,0 @@
-"""InfoBIM IFC domain operations."""

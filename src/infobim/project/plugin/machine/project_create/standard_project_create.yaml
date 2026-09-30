@@ -1,0 +1,112 @@
+statechart:
+  name: StandardInfoBIMProjectCreate
+  description: "Statechart for InfoBIM project creation over an OntoBDC container."
+
+  root state:
+    name: standard_project_create
+    initial: undefined
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state before the target project directory exists."
+          pt-br: "Estado inicial antes da existencia do diretorio alvo do projeto."
+        transitions:
+          - target: invalid_path
+            guard: handler.can_transit_to(to_state = ProjectCreateProcessStatePort.INVALID_PATH)
+          - target: directory_ready
+            guard: handler.can_transit_to(to_state = ProjectCreateProcessStatePort.DIRECTORY_READY)
+            action: handler.perform_state_transition(to_state = ProjectCreateProcessStatePort.DIRECTORY_READY)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectCreateProcessStatePort.UNDEFINED, to_state = ProjectCreateProcessStatePort.DIRECTORY_READY)
+
+      - name: invalid_path
+        label:
+          en: "Invalid Path"
+          pt-br: "Caminho Invalido"
+        description:
+          en: "The target path points to an existing file and cannot be used as a project directory."
+          pt-br: "O caminho alvo aponta para um arquivo existente e nao pode ser usado como diretorio de projeto."
+        type: final
+
+      - name: directory_ready
+        label:
+          en: "Directory Ready"
+          pt-br: "Diretorio Pronto"
+        description:
+          en: "The target project directory exists and is ready for the next creation steps."
+          pt-br: "O diretorio alvo do projeto existe e esta pronto para as proximas etapas da criacao."
+        transitions:
+          - target: container_metadata_ready
+            guard: handler.can_transit_to(to_state = ProjectCreateProcessStatePort.CONTAINER_METADATA_READY)
+            action: handler.perform_state_transition(to_state = ProjectCreateProcessStatePort.CONTAINER_METADATA_READY)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectCreateProcessStatePort.DIRECTORY_READY, to_state = ProjectCreateProcessStatePort.CONTAINER_METADATA_READY)
+
+      - name: container_metadata_ready
+        label:
+          en: "Container Metadata Ready"
+          pt-br: "Metadados do Container Prontos"
+        description:
+          en: "The container metadata file exists and describes the project container."
+          pt-br: "O arquivo de metadados do container existe e descreve o container do projeto."
+        transitions:
+          - target: container_storage_index_ready
+            guard: handler.can_transit_to(to_state = ProjectCreateProcessStatePort.CONTAINER_STORAGE_INDEX_READY)
+            action: handler.perform_state_transition(to_state = ProjectCreateProcessStatePort.CONTAINER_STORAGE_INDEX_READY)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectCreateProcessStatePort.CONTAINER_METADATA_READY, to_state = ProjectCreateProcessStatePort.CONTAINER_STORAGE_INDEX_READY)
+
+      - name: container_storage_index_ready
+        label:
+          en: "Container Storage Index Ready"
+          pt-br: "Indice de Storage do Container Pronto"
+        description:
+          en: "The storage index entry for the project container is synchronized."
+          pt-br: "A entrada do container do projeto no indice de storage esta sincronizada."
+        transitions:
+          - target: container_manifest_synced
+            guard: handler.can_transit_to(to_state = ProjectCreateProcessStatePort.CONTAINER_MANIFEST_SYNCED)
+            action: handler.perform_state_transition(to_state = ProjectCreateProcessStatePort.CONTAINER_MANIFEST_SYNCED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectCreateProcessStatePort.CONTAINER_STORAGE_INDEX_READY, to_state = ProjectCreateProcessStatePort.CONTAINER_MANIFEST_SYNCED)
+
+      - name: container_manifest_synced
+        label:
+          en: "Container Manifest Synced"
+          pt-br: "Manifesto do Container Sincronizado"
+        description:
+          en: "The container manifest lists the project container files."
+          pt-br: "O manifesto do container lista os arquivos do container do projeto."
+        transitions:
+          - target: project_dataset_ready
+            guard: handler.can_transit_to(to_state = ProjectCreateProcessStatePort.PROJECT_DATASET_READY)
+            action: handler.perform_state_transition(to_state = ProjectCreateProcessStatePort.PROJECT_DATASET_READY)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectCreateProcessStatePort.CONTAINER_MANIFEST_SYNCED, to_state = ProjectCreateProcessStatePort.PROJECT_DATASET_READY)
+
+      - name: project_dataset_ready
+        label:
+          en: "Project Dataset Ready"
+          pt-br: "Dataset de Projeto Pronto"
+        description:
+          en: "The container holds the reserved .__infobim__ dataset and indexes it."
+          pt-br: "O container contem o dataset reservado .__infobim__ e o indexa."
+        transitions:
+          - target: ifc_project_ready
+            guard: handler.can_transit_to(to_state = ProjectCreateProcessStatePort.IFC_PROJECT_READY)
+            action: handler.perform_state_transition(to_state = ProjectCreateProcessStatePort.IFC_PROJECT_READY)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectCreateProcessStatePort.PROJECT_DATASET_READY, to_state = ProjectCreateProcessStatePort.IFC_PROJECT_READY)
+
+      - name: ifc_project_ready
+        label:
+          en: "IfcProject Ready"
+          pt-br: "IfcProject Pronto"
+        description:
+          en: "The reserved dataset declares the IfcProject the model hangs from."
+          pt-br: "O dataset reservado declara o IfcProject do qual o modelo depende."
+        type: final

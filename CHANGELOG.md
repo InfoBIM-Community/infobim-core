@@ -4,7 +4,19 @@
 
 ## Unreleased
 
+### Fixed
+
+- A geometry responsibility answered by the measurements it was handed rather than by which primitive they measure, so a cylinder — measured by a radius, as a sphere is — was created as whichever of the two the chain reached first: `infobim ifc --create <title> --radius <r> --height <h> …` produced an `IfcSphere`. The kind now travels with the measurements and each responsibility answers for its own.
+
 ### Added
+
+- `infobim dict --create <title> --uri <entry> [--global-id <GlobalId>] [--x --y --z]` defines an element of the project from a dictionary entry. It is the sibling of `infobim ifc --create`, and the difference is what decides what the element is: neither geometry nor IFC class is resolved from the invocation — the dictionary the URI names is what states them, and the command goes there, brings the entry back and reads it. `--global-id` is this executable's Project selector here as everywhere else, and the element being defined is identified by the machine, from the Project and the title, by the same rule the IFC creation flow derives a product's identity by.
+
+  `--uri` takes the entry named in full — a URL or a path — or the prefix it is already called by everywhere else in this stack, which `UriStrategy` expands into the document the prefix is short for, through the same central ontology adapter every tool resolves prefixes with. A prefix nobody declared is refused rather than turned into a path by substituting its characters into a layout. What the expansion binds is where the entry is read from, the packaged copy of the ontology tree, with the namespace the prefix names kept beside it.
+
+  The entry is stored in the project's own ETL state, under that element identity, so an element can still be explained after the dictionary it was defined from has been edited, moved or taken down. A code-hosting page is translated to the raw location of the same revision, so the link a human was given can be pasted as it is. What is read out of the entry is what the entry declares and nothing more: the IFC class it maps onto, the predefined type an OWL restriction pins that class to, and the other classes the definition belongs to; a reasoner is a different tool with different guarantees.
+
+  What the entry says is then built. The shape it describes — an X3D primitive with the values pinned to that primitive's own properties, reached through the element's geometry and that geometry's description — becomes this run's geometry, and the IFC class and predefined type it states become the element the project's model carries, placed where the run put it and contained in its storey. From the shape onwards the states are the IFC creation flow's own, reached through its own capabilities rather than mirrored here: a shape defined, an IFC item carrying it, a representation wrapping the item, an element carrying the representation and a model carrying the element are the same facts whether the measurements came from a command or from a dictionary.
 
 - `infobim 4d --task` opens a local screen for recording tasks and progress into the container's schedule workbook — the same workbook the Gantt Surface reads. One logical task is three rows across `IfcTask`, `IfcTaskTime` and `IfcRelSequence`, tied together by GlobalIds; typing those by hand is where a schedule loses data silently, because a mistyped id raises nothing, it just makes the task stop appearing in the Gantt. The command generates the ids and the `FINISH_START` sequence row, so nobody types one.
 

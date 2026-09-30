@@ -1,34 +1,50 @@
-"""InfoBIM terminal logo.
-
-Reuses OntoBDC's `LogoComponent` rendering machinery verbatim (ANSI
-coloring, the compact one-line default vs. the large pyfiglet banner,
-terminal-width centering) -- only the brand text and version lookup are
-InfoBIM's own. This mirrors the exact relationship every other InfoBIM
-command has with OntoBDC's CLI response/Widget/Surface stack: reuse, don't
-reinvent.
-"""
-
+from typing import Any, ClassVar, Dict, Optional
 from importlib import metadata
-from typing import Optional
 
-from ontobdc.view.component.logo.python import LogoComponent
+from ontobdc.cli.plugin.tile.logo import LogoComponent
+from ontobdc.shared.domain.port.component import TerminalTileRenderable
 
 
 class InfoBIMLogoComponent(LogoComponent):
-    """Terminal representation of the InfoBIM logo component."""
+    """
+    Terminal representation of the InfoBIM logo.
 
-    PRIMARY_TEXT = "Info"
-    ACCENT_TEXT = "BIM"
-    TEXT_VALUE = PRIMARY_TEXT + ACCENT_TEXT
+    Everything about how a logo is drawn — the colouring, the compact marker,
+    the large banner, the centering — belongs to OntoBDC's own component and
+    is inherited unchanged. Only the brand and the distribution the version
+    is read from are InfoBIM's.
+    """
+
+    PRIMARY_TEXT: ClassVar[str] = "Info"
+    ACCENT_TEXT: ClassVar[str] = "BIM"
+    TEXT_VALUE: ClassVar[str] = PRIMARY_TEXT + ACCENT_TEXT
+    DISTRIBUTION: ClassVar[str] = "infobim"
 
     def _version_label(self) -> str:
         version: Optional[str] = self._version
         if version is None:
-            try:
-                version = metadata.version("infobim")
-            except metadata.PackageNotFoundError:
-                version = None
+            version = metadata.version(self.DISTRIBUTION)
 
-        if not version:
-            return ""
-        return version if str(version).startswith("v") else f"v{version}"
+        if not version.startswith("v"):
+            return f"v{version}"
+
+        return version
+
+
+class InfoBIMOperationTile(TerminalTileRenderable):
+    """
+    The brand tile InfoBIM puts in the operation region of the surface.
+
+    The shared renderer draws the top border with a cutout for whichever tile
+    the operation region holds, so InfoBIM plugs its own brand in there
+    instead of drawing a second banner outside the frame.
+    """
+
+    def render(
+        self,
+        *,
+        columns: int,
+        rows: int,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        return InfoBIMLogoComponent().render_compact()

@@ -1,0 +1,73 @@
+statechart:
+  name: StandardInfoBIMThreeDView
+  description: "Statechart for opening the InfoBIM 3D offline viewer for a Project."
+
+  root state:
+    name: standard_three_d_view
+    initial: undefined
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state before the Project's IfcProject has been read for this viewer launch."
+          pt-br: "Estado inicial antes da leitura do IfcProject do projeto para esta abertura do visualizador."
+        transitions:
+          - target: ifc_element_meshes_converted
+            guard: handler.can_transit_to(to_state = ThreeDViewProcessStatePort.IFC_ELEMENT_MESHES_CONVERTED)
+            action: handler.perform_state_transition(to_state = ThreeDViewProcessStatePort.IFC_ELEMENT_MESHES_CONVERTED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ThreeDViewProcessStatePort.UNDEFINED, to_state = ThreeDViewProcessStatePort.IFC_ELEMENT_MESHES_CONVERTED)
+
+      - name: ifc_element_meshes_converted
+        label:
+          en: "IFC Element Meshes Converted"
+          pt-br: "Malhas dos Elementos IFC Convertidas"
+        description:
+          en: "Every IFC element the Project's RO-Crate declares geometry for has been converted into an IFCX mesh of its own."
+          pt-br: "Todo elemento IFC com geometria declarado no RO-Crate do projeto foi convertido em uma malha IFCX propria."
+        transitions:
+          - target: ifc_project_injected
+            guard: handler.can_transit_to(to_state = ThreeDViewProcessStatePort.IFC_PROJECT_INJECTED)
+            action: handler.perform_state_transition(to_state = ThreeDViewProcessStatePort.IFC_PROJECT_INJECTED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ThreeDViewProcessStatePort.IFC_ELEMENT_MESHES_CONVERTED, to_state = ThreeDViewProcessStatePort.IFC_PROJECT_INJECTED)
+
+      - name: ifc_project_injected
+        label:
+          en: "IfcProject Injected"
+          pt-br: "IfcProject Injetado"
+        description:
+          en: "The Project's IfcProject has been read and staged as JSON-LD for the viewer page."
+          pt-br: "O IfcProject do projeto foi lido e preparado como JSON-LD para a pagina do visualizador."
+        transitions:
+          - target: project_tree_injected
+            guard: handler.can_transit_to(to_state = ThreeDViewProcessStatePort.PROJECT_TREE_INJECTED)
+            action: handler.perform_state_transition(to_state = ThreeDViewProcessStatePort.PROJECT_TREE_INJECTED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ThreeDViewProcessStatePort.IFC_PROJECT_INJECTED, to_state = ThreeDViewProcessStatePort.PROJECT_TREE_INJECTED)
+
+      - name: project_tree_injected
+        label:
+          en: "Project Tree Injected"
+          pt-br: "Arvore do Projeto Injetada"
+        description:
+          en: "The Project's inspect tree has been built and staged for the viewer page."
+          pt-br: "A arvore de inspecao do projeto foi montada e preparada para a pagina do visualizador."
+        transitions:
+          - target: three_d_element_tree_injected
+            guard: handler.can_transit_to(to_state = ThreeDViewProcessStatePort.THREE_D_ELEMENT_TREE_INJECTED)
+            action: handler.perform_state_transition(to_state = ThreeDViewProcessStatePort.THREE_D_ELEMENT_TREE_INJECTED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ThreeDViewProcessStatePort.PROJECT_TREE_INJECTED, to_state = ThreeDViewProcessStatePort.THREE_D_ELEMENT_TREE_INJECTED)
+
+      - name: three_d_element_tree_injected
+        label:
+          en: "3D Element Tree Injected"
+          pt-br: "Arvore de Elementos 3D Injetada"
+        description:
+          en: "The Project's renderable 3D elements tree has been built and staged for the viewer page."
+          pt-br: "A arvore de elementos 3D renderizaveis do projeto foi montada e preparada para a pagina do visualizador."
+        type: final

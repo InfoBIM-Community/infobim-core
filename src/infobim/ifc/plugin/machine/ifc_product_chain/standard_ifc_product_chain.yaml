@@ -1,0 +1,55 @@
+statechart:
+  name: StandardIfcProductChain
+  description: "Parallel chain that resolves which capability creates the IFC class a run named. Each region is one responsibility, named by the id of the IfcProductCreateResponsibilityPort capability it runs."
+
+  root state:
+    name: standard_ifc_product_chain
+    parallel states:
+      - name: ifc_beam
+        initial: ifc_beam_pending
+        states:
+          - name: ifc_beam_pending
+            transitions:
+              - target: ifc_beam_completed
+                guard: worker.can_handle('org.infobim.ifc.plugin.capability.transformation.product.ifc_beam')
+                action: worker.execute_responsibility('org.infobim.ifc.plugin.capability.transformation.product.ifc_beam')
+              - target: ifc_beam_completed
+                guard: not worker.can_handle('org.infobim.ifc.plugin.capability.transformation.product.ifc_beam')
+          - name: ifc_beam_completed
+            type: final
+      - name: ifc_distribution_chamber_element
+        initial: ifc_distribution_chamber_element_pending
+        states:
+          - name: ifc_distribution_chamber_element_pending
+            transitions:
+              - target: ifc_distribution_chamber_element_completed
+                guard: worker.can_handle('org.infobim.ifc.plugin.capability.transformation.product.ifc_distribution_chamber_element')
+                action: worker.execute_responsibility('org.infobim.ifc.plugin.capability.transformation.product.ifc_distribution_chamber_element')
+              - target: ifc_distribution_chamber_element_completed
+                guard: not worker.can_handle('org.infobim.ifc.plugin.capability.transformation.product.ifc_distribution_chamber_element')
+          - name: ifc_distribution_chamber_element_completed
+            type: final
+      - name: ifc_footing
+        initial: ifc_footing_pending
+        states:
+          - name: ifc_footing_pending
+            transitions:
+              - target: ifc_footing_completed
+                guard: worker.can_handle('org.infobim.ifc.plugin.capability.transformation.product.ifc_footing')
+                action: worker.execute_responsibility('org.infobim.ifc.plugin.capability.transformation.product.ifc_footing')
+              - target: ifc_footing_completed
+                guard: not worker.can_handle('org.infobim.ifc.plugin.capability.transformation.product.ifc_footing')
+          - name: ifc_footing_completed
+            type: final
+      - name: ifc_pipe_segment
+        initial: ifc_pipe_segment_pending
+        states:
+          - name: ifc_pipe_segment_pending
+            transitions:
+              - target: ifc_pipe_segment_completed
+                guard: worker.can_handle('org.infobim.ifc.plugin.capability.transformation.product.ifc_pipe_segment')
+                action: worker.execute_responsibility('org.infobim.ifc.plugin.capability.transformation.product.ifc_pipe_segment')
+              - target: ifc_pipe_segment_completed
+                guard: not worker.can_handle('org.infobim.ifc.plugin.capability.transformation.product.ifc_pipe_segment')
+          - name: ifc_pipe_segment_completed
+            type: final

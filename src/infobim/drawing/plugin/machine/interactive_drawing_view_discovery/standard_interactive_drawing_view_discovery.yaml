@@ -1,0 +1,129 @@
+statechart:
+  name: StandardInteractiveDrawingViewDiscovery
+  description: "Statechart for discovering the Drawing Views of a sheet like the standard discovery, then presenting them interactively once their relationships conform to SHACL."
+
+  root state:
+    name: standard_interactive_drawing_view_discovery
+    initial: undefined
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state, before the sheet was read."
+          pt-br: "Estado inicial, antes da leitura da prancha."
+        transitions:
+          - target: drawing_viewports_discovered
+            guard: handler.can_transit_to(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEWPORTS_DISCOVERED)
+            action: handler.perform_state_transition(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEWPORTS_DISCOVERED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DrawingViewDiscoveryProcessStatePort.UNDEFINED, to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEWPORTS_DISCOVERED)
+
+      - name: drawing_viewports_discovered
+        label:
+          en: "Drawing Viewports Discovered"
+          pt-br: "Viewports da Prancha Descobertos"
+        description:
+          en: "The sheet is loaded and the regions its viewports show opened the Drawing View candidates."
+          pt-br: "A prancha foi carregada e as regioes mostradas pelos seus viewports abriram os candidatos a vista."
+        transitions:
+          - target: drawing_view_titles_resolved
+            guard: handler.can_transit_to(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_TITLES_RESOLVED)
+            action: handler.perform_state_transition(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_TITLES_RESOLVED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEWPORTS_DISCOVERED, to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_TITLES_RESOLVED)
+
+      - name: drawing_view_titles_resolved
+        label:
+          en: "Drawing View Titles Resolved"
+          pt-br: "Titulos das Vistas Resolvidos"
+        description:
+          en: "The titles and scales written on the sheet were given to the candidates."
+          pt-br: "Os titulos e escalas escritos na prancha foram atribuidos aos candidatos."
+        transitions:
+          - target: drawing_view_frames_detected
+            guard: handler.can_transit_to(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_FRAMES_DETECTED)
+            action: handler.perform_state_transition(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_FRAMES_DETECTED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_TITLES_RESOLVED, to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_FRAMES_DETECTED)
+
+      - name: drawing_view_frames_detected
+        label:
+          en: "Drawing View Frames Detected"
+          pt-br: "Molduras das Vistas Detectadas"
+        description:
+          en: "The frames drawn around views delimited the candidates."
+          pt-br: "As molduras desenhadas em volta das vistas delimitaram os candidatos."
+        transitions:
+          - target: drawing_view_references_detected
+            guard: handler.can_transit_to(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_REFERENCES_DETECTED)
+            action: handler.perform_state_transition(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_REFERENCES_DETECTED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_FRAMES_DETECTED, to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_REFERENCES_DETECTED)
+
+      - name: drawing_view_references_detected
+        label:
+          en: "Drawing View References Detected"
+          pt-br: "Referencias das Vistas Detectadas"
+        description:
+          en: "Section labels, detail bubbles and view marks were attached to the candidates."
+          pt-br: "Rotulos de corte, bolhas de detalhe e marcas de vista foram associados aos candidatos."
+        transitions:
+          - target: drawing_view_clusters_detected
+            guard: handler.can_transit_to(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_CLUSTERS_DETECTED)
+            action: handler.perform_state_transition(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_CLUSTERS_DETECTED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_REFERENCES_DETECTED, to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_CLUSTERS_DETECTED)
+
+      - name: drawing_view_clusters_detected
+        label:
+          en: "Drawing View Clusters Detected"
+          pt-br: "Agrupamentos das Vistas Detectados"
+        description:
+          en: "Spatial clusters delimited what the explicit evidence did not."
+          pt-br: "Agrupamentos espaciais delimitaram o que a evidencia explicita nao delimitou."
+        transitions:
+          - target: drawing_views_classified
+            guard: handler.can_transit_to(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEWS_CLASSIFIED)
+            action: handler.perform_state_transition(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEWS_CLASSIFIED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_CLUSTERS_DETECTED, to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEWS_CLASSIFIED)
+
+      - name: drawing_views_classified
+        label:
+          en: "Drawing Views Classified"
+          pt-br: "Vistas Classificadas"
+        description:
+          en: "Each delimited candidate settled into a classified Drawing View."
+          pt-br: "Cada candidato delimitado virou uma vista classificada."
+        transitions:
+          - target: drawing_views_extracted
+            guard: handler.can_transit_to(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEWS_EXTRACTED)
+            action: handler.perform_state_transition(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEWS_EXTRACTED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEWS_CLASSIFIED, to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEWS_EXTRACTED)
+
+      - name: drawing_views_extracted
+        label:
+          en: "Drawing Views Extracted"
+          pt-br: "Vistas Extraidas"
+        description:
+          en: "Each Drawing View was written into a DXF of its own inside the project."
+          pt-br: "Cada vista foi gravada em um DXF proprio dentro do projeto."
+        transitions:
+          - target: drawing_view_relationships_modeled
+            guard: handler.can_transit_to(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_RELATIONSHIPS_MODELED)
+            action: handler.perform_state_transition(to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_RELATIONSHIPS_MODELED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEWS_EXTRACTED, to_state = DrawingViewDiscoveryProcessStatePort.DRAWING_VIEW_RELATIONSHIPS_MODELED)
+
+      - name: drawing_view_relationships_modeled
+        label:
+          en: "Drawing View Relationships Modeled"
+          pt-br: "Relacoes das Vistas Modeladas"
+        description:
+          en: "The sheet and its views are modelled as ICDD documents and links and as OntoSTEP presentation entities, conforming to SHACL."
+          pt-br: "A prancha e suas vistas estao modeladas como documentos e links ICDD e como entidades de apresentacao OntoSTEP, conformes ao SHACL."
+        type: final

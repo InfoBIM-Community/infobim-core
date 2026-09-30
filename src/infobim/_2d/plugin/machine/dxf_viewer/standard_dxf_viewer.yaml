@@ -1,0 +1,50 @@
+statechart:
+  name: StandardInfoBIMDxfViewer
+  label:
+    en: "InfoBIM DXF Viewer"
+    pt-br: "Visualizador DXF InfoBIM"
+  description:
+    en: "Load the requested DXF file into the context, then open it in the InfoBIM 2D viewer."
+    pt-br: "Carrega o arquivo DXF solicitado no contexto e o abre no visualizador 2D do InfoBIM."
+
+  root state:
+    name: standard_dxf_viewer
+    initial: undefined
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state before the DXF file is read."
+          pt-br: "Estado inicial antes da leitura do arquivo DXF."
+        transitions:
+          - target: dxf_document_loaded
+            guard: handler.can_transit_to(to_state = DxfViewerProcessStatePort.DXF_DOCUMENT_LOADED)
+            action: handler.perform_state_transition(to_state = DxfViewerProcessStatePort.DXF_DOCUMENT_LOADED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DxfViewerProcessStatePort.UNDEFINED, to_state = DxfViewerProcessStatePort.DXF_DOCUMENT_LOADED)
+
+      - name: dxf_document_loaded
+        label:
+          en: "DXF Document Loaded"
+          pt-br: "Documento DXF Carregado"
+        description:
+          en: "The DXF file was read and its drawing was injected into the context as the original document."
+          pt-br: "O arquivo DXF foi lido e seu desenho foi injetado no contexto como documento original."
+        transitions:
+          - target: dxf_viewer_opened
+            guard: handler.can_transit_to(to_state = DxfViewerProcessStatePort.DXF_VIEWER_OPENED)
+            action: handler.perform_state_transition(to_state = DxfViewerProcessStatePort.DXF_VIEWER_OPENED)
+            contract:
+              - after: handler.validate_state_transition(from_state = DxfViewerProcessStatePort.DXF_DOCUMENT_LOADED, to_state = DxfViewerProcessStatePort.DXF_VIEWER_OPENED)
+
+      - name: dxf_viewer_opened
+        type: final
+        label:
+          en: "DXF Viewer Opened"
+          pt-br: "Visualizador DXF Aberto"
+        description:
+          en: "The InfoBIM 2D viewer was opened with the loaded drawing."
+          pt-br: "O visualizador 2D do InfoBIM foi aberto com o desenho carregado."

@@ -1,0 +1,87 @@
+statechart:
+  name: StandardGeometricProductDelete
+  description: "Statechart for deleting a geometric product (by GlobalId) from an InfoBIM project's IFC model."
+
+  root state:
+    name: standard_geometric_product_delete
+    initial: undefined
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state, before the target IFC model was verified."
+          pt-br: "Estado inicial, antes da verificacao do modelo IFC alvo."
+        transitions:
+          - target: ifc_model_healthy
+            guard: handler.can_transit_to(to_state = GeometricProductDeleteProcessStatePort.IFC_MODEL_HEALTHY)
+            action: handler.perform_state_transition(to_state = GeometricProductDeleteProcessStatePort.IFC_MODEL_HEALTHY)
+            contract:
+              - after: handler.validate_state_transition(from_state = GeometricProductDeleteProcessStatePort.UNDEFINED, to_state = GeometricProductDeleteProcessStatePort.IFC_MODEL_HEALTHY)
+
+      - name: ifc_model_healthy
+        label:
+          en: "IFC Model Healthy"
+          pt-br: "Modelo IFC Saudavel"
+        description:
+          en: "The target IFC model was resolved and can be modified."
+          pt-br: "O modelo IFC alvo foi resolvido e pode ser modificado."
+        transitions:
+          - target: global_id_known
+            guard: handler.can_transit_to(to_state = GeometricProductDeleteProcessStatePort.GLOBAL_ID_KNOWN)
+            action: handler.perform_state_transition(to_state = GeometricProductDeleteProcessStatePort.GLOBAL_ID_KNOWN)
+            contract:
+              - after: handler.validate_state_transition(from_state = GeometricProductDeleteProcessStatePort.IFC_MODEL_HEALTHY, to_state = GeometricProductDeleteProcessStatePort.GLOBAL_ID_KNOWN)
+
+      - name: global_id_known
+        label:
+          en: "GlobalId Known"
+          pt-br: "GlobalId Conhecido"
+        description:
+          en: "The GlobalId of the element to delete is well-formed for this run."
+          pt-br: "O GlobalId do elemento a excluir esta bem formado nesta execucao."
+        transitions:
+          - target: global_id_present
+            guard: handler.can_transit_to(to_state = GeometricProductDeleteProcessStatePort.GLOBAL_ID_PRESENT)
+            action: handler.perform_state_transition(to_state = GeometricProductDeleteProcessStatePort.GLOBAL_ID_PRESENT)
+            contract:
+              - after: handler.validate_state_transition(from_state = GeometricProductDeleteProcessStatePort.GLOBAL_ID_KNOWN, to_state = GeometricProductDeleteProcessStatePort.GLOBAL_ID_PRESENT)
+
+      - name: global_id_present
+        label:
+          en: "GlobalId Present"
+          pt-br: "GlobalId Presente"
+        description:
+          en: "An IFC product with the requested GlobalId is carried by the federated model."
+          pt-br: "Um produto IFC com o GlobalId solicitado existe no modelo federado."
+        transitions:
+          - target: geometric_product_defederated
+            guard: handler.can_transit_to(to_state = GeometricProductDeleteProcessStatePort.GEOMETRIC_PRODUCT_DEFEDERATED)
+            action: handler.perform_state_transition(to_state = GeometricProductDeleteProcessStatePort.GEOMETRIC_PRODUCT_DEFEDERATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = GeometricProductDeleteProcessStatePort.GLOBAL_ID_PRESENT, to_state = GeometricProductDeleteProcessStatePort.GEOMETRIC_PRODUCT_DEFEDERATED)
+
+      - name: geometric_product_defederated
+        label:
+          en: "Geometric Product Defederated"
+          pt-br: "Produto Geometrico Defederado"
+        description:
+          en: "The element and everything only it owned have been removed from the federated model."
+          pt-br: "O elemento e tudo o que ele era o unico dono foram removidos do modelo federado."
+        transitions:
+          - target: state_cleaned_up
+            guard: handler.can_transit_to(to_state = GeometricProductDeleteProcessStatePort.STATE_CLEANED_UP)
+            action: handler.perform_state_transition(to_state = GeometricProductDeleteProcessStatePort.STATE_CLEANED_UP)
+            contract:
+              - after: handler.validate_state_transition(from_state = GeometricProductDeleteProcessStatePort.GEOMETRIC_PRODUCT_DEFEDERATED, to_state = GeometricProductDeleteProcessStatePort.STATE_CLEANED_UP)
+
+      - name: state_cleaned_up
+        label:
+          en: "State Cleaned Up"
+          pt-br: "Estado Limpo"
+        description:
+          en: "The assembled state that produced this product (STEP files under the product's identity) is gone from the project's ETL workspace."
+          pt-br: "O estado montado que gerou este produto (arquivos STEP sob a identidade do produto) foi removido do workspace ETL do projeto."
+        type: final

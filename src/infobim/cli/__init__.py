@@ -1,272 +1,266 @@
-"""InfoBIM v0.5 command-line shell.
-
-Dispatch is declarative, not hardcoded: every InfoBIM command is a
-`CliCommandPort` discovered under `infobim/<domain>/plugin/command/*.py`,
-the exact same convention (and the exact same resolution machinery --
-`CliCommandRunAdapter.make()`) OntoBDC's own CLI uses for itself. This file
-only tells that machinery to look inside the `infobim` package instead of
-`ontobdc` (via `CommandLoader`'s `root_package` parameter) -- it no longer
-knows the names of InfoBIM's own domains or commands at all. A new command
-just needs to exist as a properly declared `CliCommandPort`; nothing here
-ever needs to change again.
-
-Rendering reuses OntoBDC's terminal rendering pipeline wholesale
-(``ResponseWidgetAdapterLoader``, ``TerminalSurfaceRenderer``, and the
-markdown widget-to-markdown dispatcher) instead of the legacy
-``TerminalSurface`` class (removed during the Aggressive Cleanup C pass) --
-every InfoBIM command already returns one of OntoBDC's own
-``CommandResponse`` types, so OntoBDC's registered widget adapters already
-know how to decompose them. Only the logo/banner is InfoBIM's own
-(``infobim.cli.adapter.logo.InfoBIMLogoComponent``).
-"""
-
-import subprocess
+import os
 import sys
+from typing import Any, ClassVar, Dict, List, Optional, Tuple
 from functools import partial
-from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from ontobdc.cli import CliParameterValidationOrchestrator
+from ontobdc.cli import (
+    BORDERLESS_ENVIRONMENT_VARIABLE,
+    CliParameterValidationOrchestrator,
+)
+from ontobdc.cli.adapter.loader import ExceptionCommandResponseLoader
+from ontobdc.cli.adapter.logger import (
+    InLineLogger,
+    NullLogRepository,
+    StandardConsoleLogger,
+)
 from ontobdc.cli.adapter.command import CliCommandRunAdapter
-from ontobdc.cli.adapter.loader import ResponseWidgetAdapterLoader
-from ontobdc.cli.adapter.logger import InLineLogger, NullLogRepository
-from ontobdc.cli.adapter.terminal import prompt_choice
-from ontobdc.cli.domain.exception.command import CliCommandArgumentException
+from ontobdc.cli.adapter.argument import CliGlobalArgumentParserAdapter
+from ontobdc.cli.adapter.renderer import (
+    BorderlessTerminalSurfaceAdapter,
+    CommandResponseRenderAdapter,
+    ResponseWidgetLoaderAdapter,
+    TerminalSurfaceAdapter,
+)
+from ontobdc.shared.adapter.loader import CommandLoader, ParameterLoader
+from ontobdc.cli.adapter.suggestion import CommandSuggestionAdapter
+from ontobdc.cli.domain.port.logger import LogRepositoryPort, LoggerAwarePort
 from ontobdc.cli.domain.model.logger import LogLevel, LogStrategyConfig
 from ontobdc.cli.domain.port.command import CliCommandPort
-from ontobdc.cli.domain.port.context import CliContextPort, PromptChoiceAwarePort
-from ontobdc.cli.domain.port.logger import LoggerAwarePort, LogRepositoryPort
-from ontobdc.cli.domain.response.command import CommandResponse, ExceptionCommandResponse
-from ontobdc.shared.adapter.loader import CommandLoader, ParameterLoader
-from ontobdc.shared.domain.port.component import TerminalTileRenderable
-from ontobdc.shared.facade.adapter.logger import (
-    clear_active_log_repository,
-    set_active_log_repository,
+from ontobdc.cli.domain.port.context import CliContextPort
+from ontobdc.cli.domain.port.renderer import (
+    CommandResponseRendererPort,
+    TerminalSurfacePort,
 )
+from ontobdc.cli.domain.response.command import (
+    CommandResponse,
+    InteractiveCommandResponse,
+)
+from ontobdc.cli.domain.request.command import CliCommandRequest
+from ontobdc.cli.domain.exception.command import CliCommandArgumentException
+from ontobdc.shared.facade.adapter.logger import ActiveLogRepositoryBroker
 
-from infobim.cli.adapter.logo import InfoBIMLogoComponent
 
+class InfoBIMCli:
+    """
+    The InfoBIM command-line shell.
 
-class _InfoBIMOperationTile(TerminalTileRenderable):
-    """A one-line brand tile injected into the shared renderer's ``OperationRegion``.
+    Dispatch is the same machinery OntoBDC uses for itself: a command is a
+    ``CliCommandPort`` discovered under ``infobim/<domain>/plugin/command``,
+    resolved by ``CliCommandRunAdapter``. This only points that machinery at
+    the ``infobim`` package, so a new command never needs this file to change.
 
-    Implements the terminal-tile contract so InfoBIM can plug its own compact
-    logo into the shared ``TerminalSurfaceRenderer`` frame without having to
-    depend on the legacy ``TerminalSurface`` class or re-implement the frame
-    assembly / cutout drawing.  Produces the exact same visual the ``InfoBIMLogoComponent.
-    render_compact`` output previously printed *outside* the frame in the previous
-    (broken) legacy integration; now it opens a cutout in the top border *inside* the
-    outer frame, exactly like the default builtin OntoBDC logo tile.
+    Parameter strategies are discovered in both packages, because an InfoBIM
+    command reuses OntoBDC's own selectors — the container a project is,
+    for one — and declares its own alongside them.
     """
 
-    def render(
-        self,
-        *,
-        columns: int,
-        rows: int,
-        context: Optional[Dict[str, Any]] = None,
-    ) -> str:
-        return InfoBIMLogoComponent().render_compact()
+    ROOT_PACKAGE: ClassVar[str] = "infobim"
+    EXECUTABLE: ClassVar[str] = "infobim"
+    PARAMETER_ROOT_PACKAGES: ClassVar[Tuple[str, ...]] = ("ontobdc", "infobim")
+    # A command InfoBIM re-exports keeps the usage string OntoBDC authored
+    # for it, which names the other executable. Declaring that name as an
+    # alias lets a suggestion read those usages as this executable's own.
+    EXECUTABLE_ALIASES: ClassVar[Tuple[str, ...]] = ("ontobdc",)
 
+    RICH_RENDER_TYPE: ClassVar[str] = "rich"
+    JSON_RENDER_TYPE: ClassVar[str] = "json"
+    HTML_RENDER_TYPE: ClassVar[str] = "html"
+    SILENCE_FLAGS: ClassVar[Tuple[str, ...]] = ("--silent", "-s")
 
-def main(argv: Sequence[str] | None = None) -> None:
-    incoming_args: List[str] = _parse_incoming_args(argv)
-
-    logger: Optional[LogRepositoryPort] = None
-    try:
-        render_type: str = "rich"
-        if "--json" in sys.argv:
-            render_type = "json"
-        elif "--html" in sys.argv:
-            render_type = "html"
-
-        silent: bool = "--silent" in sys.argv or "-s" in sys.argv
-
-        logger = InLineLogger()
-        if render_type == "json":
-            logger = NullLogRepository()
-
-        resolved_log_level: Optional[LogLevel]
-        sanitized_incoming_args: List[str]
-        resolved_log_level, sanitized_incoming_args = _consume_global_log_level(
-            incoming_args
+    def __init__(self) -> None:
+        self._argument_parser: CliGlobalArgumentParserAdapter = (
+            CliGlobalArgumentParserAdapter()
+        )
+        surface: TerminalSurfacePort = (
+            BorderlessTerminalSurfaceAdapter()
+            if os.environ.get(BORDERLESS_ENVIRONMENT_VARIABLE) == "1"
+            else TerminalSurfaceAdapter()
+        )
+        self._renderer: CommandResponseRendererPort = CommandResponseRenderAdapter(
+            widget_loader=ResponseWidgetLoaderAdapter(),
+            surface=surface,
         )
 
-        # Apply an explicit threshold before exposing the logger through the
-        # global broker. When --log-level is omitted, the repository keeps
-        # LogLevelPolicy.DEFAULT (NOTICE).
-        if resolved_log_level is not None:
-            _ = LogStrategyConfig(
-                log_level=resolved_log_level,
-                log_repository=logger,
-            )
-
-        set_active_log_repository(logger)
-
+    def execute(self) -> None:
+        """
+        Run the command the arguments name and render what it returns.
+        """
+        render_type: str = self.RICH_RENDER_TYPE
+        silent: bool = False
+        logger: Optional[LogRepositoryPort] = None
         try:
+            incoming_args: List[str] = self._argument_parser.strip_output_flags()
+            render_type = self._render_type()
+            silent = self._is_silent()
+            logger = self._logger_for(render_type)
+
+            resolved_log_level: Optional[LogLevel]
+            sanitized_incoming_args: List[str]
+            resolved_log_level, sanitized_incoming_args = (
+                self._argument_parser.consume_log_level(incoming_args)
+            )
+            if resolved_log_level is not None:
+                _ = LogStrategyConfig(
+                    log_level=resolved_log_level,
+                    log_repository=logger,
+                )
+
+            ActiveLogRepositoryBroker.instance().set(logger)
+
             command: CliCommandPort = CliCommandRunAdapter.make(
                 sanitized_incoming_args,
                 logger,
-                loader_class=partial(CommandLoader, root_package="infobim"),
+                loader_class=partial(
+                    CommandLoader,
+                    root_package=self.ROOT_PACKAGE,
+                ),
                 defer_check=True,
             )
-        except CliCommandArgumentException as error:
-            print(str(error), file=sys.stderr)
-            raise SystemExit(2)
 
-        if resolved_log_level is not None:
-            request: Optional[Any] = getattr(command, "_request", None)
-            context: Optional[CliContextPort] = getattr(request, "context", None)
-            if context is not None:
-                context.set_parameter_value("log_level", resolved_log_level)
+            if command.METADATA.interactive and render_type != self.RICH_RENDER_TYPE:
+                raise CliCommandArgumentException(
+                    f"Interactive command '{command.METADATA.id}' "
+                    f"does not support {render_type} output."
+                )
 
-        parameter_loader: ParameterLoader = ParameterLoader(
-            logger=logger,
-            root_packages=("ontobdc", "infobim"),
-        )
-        parameter_validator: CliParameterValidationOrchestrator = (
-            CliParameterValidationOrchestrator()
-        )
-        parameter_validator.check(
-            command,
-            sanitized_incoming_args,
-            logger,
-            parameter_loader,
-        )
+            self._bind_log_level(command, resolved_log_level)
 
-        if isinstance(command, LoggerAwarePort):
-            log_strategy_kwargs: Dict[str, Any] = {"log_repository": logger}
-            if resolved_log_level is not None:
-                log_strategy_kwargs["log_level"] = resolved_log_level
-            log_strategy = LogStrategyConfig(**log_strategy_kwargs)
-            command.set_log_strategy(log_strategy)
+            parameter_validator: CliParameterValidationOrchestrator = (
+                CliParameterValidationOrchestrator()
+            )
+            if parameter_validator.check(
+                command,
+                sanitized_incoming_args,
+                logger,
+                ParameterLoader(
+                    logger=logger,
+                    root_packages=self.PARAMETER_ROOT_PACKAGES,
+                ),
+            ):
+                self._bind_log_strategy(command, logger, resolved_log_level)
+                response: CommandResponse = command.run()
+                if not silent and not isinstance(
+                    response,
+                    InteractiveCommandResponse,
+                ):
+                    self._renderer.render(response, render_type)
 
-        if isinstance(command, PromptChoiceAwarePort):
-            command.set_prompt_choice(prompt_choice)
+                sys.exit(0)
 
-        response: CommandResponse = command.run()
-        if not silent:
-            _render_response(response, json_output=render_type == "json")
+        except SystemExit:
+            raise
+        except Exception as error:
+            # Every failure becomes a response through the same builders
+            # OntoBDC registers, so a rejected invocation is answered with
+            # the InfoBIM commands closest to what the user typed.
+            response = ExceptionCommandResponseLoader(
+                error,
+                CommandSuggestionAdapter(
+                    executable=self.EXECUTABLE,
+                    root_package=self.ROOT_PACKAGE,
+                    executable_aliases=self.EXECUTABLE_ALIASES,
+                ),
+            ).get()
+            if not silent:
+                self._renderer.render(response, render_type)
 
-        sys.exit(0)
+            sys.exit(1)
+        finally:
+            ActiveLogRepositoryBroker.instance().clear()
 
-    except Exception as error:
-        try:
-            safe_render_type: str = render_type
-        except NameError:
-            safe_render_type = "rich"
-        try:
-            safe_silent: bool = silent
-        except NameError:
-            safe_silent = False
-        safe_logger: LogRepositoryPort = (
-            logger if logger is not None else NullLogRepository()
-        )
-        response = ExceptionCommandResponse(
-            title="Run",
-            description="Command execution failed.",
-            content={"error": str(error)},
-        )
-        if not safe_silent:
-            _render_response(response, safe_render_type == "json")
-        raise SystemExit(1)
-    finally:
-        # Always release the broker reference -- prevents stale logger
-        # reuse when this entry point is called more than once inside a
-        # single process (e.g. the test harness).
-        clear_active_log_repository()
+    def _render_type(self) -> str:
+        """
+        Return the renderer the invocation asks for.
+        """
+        if f"--{self.JSON_RENDER_TYPE}" in sys.argv:
+            return self.JSON_RENDER_TYPE
 
+        if f"--{self.HTML_RENDER_TYPE}" in sys.argv:
+            return self.HTML_RENDER_TYPE
 
-def _parse_incoming_args(argv: Sequence[str] | None = None) -> List[str]:
-    """Strip render-style and silence flags from the argument vector.
+        return self.RICH_RENDER_TYPE
 
-    These tokens are consumed at the CLI layer so they never reach the
-    ``CliCommandRunAdapter`` routing stage.
-    """
-    raw: List[str] = list(sys.argv[1:] if argv is None else argv)
-    return [
-        arg
-        for arg in raw
-        if arg not in ["--json", "--rich", "--html", "--silent", "-s"]
-    ]
+    def _is_silent(self) -> bool:
+        """
+        Report whether the invocation asks for the response to be suppressed.
+        """
+        return any(flag in sys.argv for flag in self.SILENCE_FLAGS)
 
+    @staticmethod
+    def _logger_for(render_type: str) -> LogRepositoryPort:
+        """
+        Return the logger that matches the chosen renderer.
+        """
+        if render_type == InfoBIMCli.JSON_RENDER_TYPE:
+            return NullLogRepository()
 
-def _consume_global_log_level(
-    args: List[str],
-) -> Tuple[Optional[LogLevel], List[str]]:
-    """Consume every ``--log-level`` flag and its value from *args*.
+        if render_type == InfoBIMCli.RICH_RENDER_TYPE:
+            return InLineLogger()
 
-    Reuses the stateless ``LogLevelStrategy`` helpers from the shared
-    OntoBDC parameter plugin so parsing / normalisation / validation are
-    always identical between ``infobim`` and ``ontobdc``.
-    """
-    from ontobdc.cli.plugin.parameter.log_level import (
-        LogLevelStrategy as _LLS,
-    )
+        return StandardConsoleLogger()
 
-    raw_level, sanitized_args = _LLS._consume(list(args))
-    resolved_level: Optional[LogLevel] = None
-    if raw_level is not None:
-        resolved_level = _LLS._resolve(raw_level)
-    return resolved_level, sanitized_args
+    @staticmethod
+    def _bind_log_level(
+        command: CliCommandPort,
+        log_level: Optional[LogLevel],
+    ) -> None:
+        """
+        Propagate an explicit global log level into the command context.
 
+        Every concrete command discovered by the runtime wires its own
+        ``_request: CliCommandRequest`` in ``__init__`` with an attached
+        ``context: CliContextPort``. If either attribute is missing, the
+        command instance violates the dispatch contract and the failure is
+        surfaced immediately instead of silently skipped — a command that
+        cannot carry context cannot honour a global ``--log-level`` flag
+        and the operator has to be told about it explicitly.
+        """
+        if log_level is None:
+            return
 
-def _render_response(
-    response: CommandResponse,
-    json_output: bool,
-) -> None:
-    """Render a command response onto the terminal.
+        request: Any = command._request
+        if not isinstance(request, CliCommandRequest):
+            raise TypeError(
+                "InfoBIMCli._bind_log_level: command instance did not "
+                "declare a typed _request: CliCommandRequest attribute. "
+                f"Got command type {type(command).__name__!r}, _request "
+                f"type {type(request).__name__!r}."
+            )
 
-    A one-time logo banner is printed above the response; the response is
-    decomposed into Widgets via the shared ``ResponseWidgetAdapterLoader``
-    pipeline, converted to a markdown representation through the shared
-    ``_response_to_markdown`` dispatcher, then laid out and framed through
-    OntoBDC's ``TerminalSurfaceRenderer`` (the "Aggressive Cleanup C"
-    terminal stack that replaced the legacy ``TerminalSurface`` class).
-    ``--json`` bypasses Widget rendering entirely and prints the response's
-    own JSON representation.
-    """
-    if json_output:
-        _clear_terminal()
-        print(response)
-        return
+        context: Any = request.context
+        if not isinstance(context, CliContextPort):
+            raise TypeError(
+                "InfoBIMCli._bind_log_level: command._request.context is "
+                "not a CliContextPort implementation. "
+                f"Command type {type(command).__name__!r}, _request type "
+                f"{type(request).__name__!r}, context type "
+                f"{type(context).__name__!r}."
+            )
 
-    # Local imports to avoid the well-known top-level circular import chain
-    # between cli/__init__.py and the legacy surface stack (see OntoBDC's
-    # own _render_rich_response for details).  These imports are entirely
-    # safe here because we are already deep inside CLI execution.
-    from ontobdc.cli.adapter.loader import ResponseWidgetAdapterLoader as _RWAL
-    from ontobdc.view.adapter.terminal.surface_renderer import (
-        TerminalSurfaceRenderer as _TSR,
-    )
-    from ontobdc.view.component.widget.python import TextWidget as _TW
-    from ontobdc.cli import __dict__ as _ontobdc_cli_exports  # noqa: E402  (keep local)
+        context.set_parameter_value("log_level", log_level)
 
-    # Pull the shared markdown dispatcher from OntoBDC's CLI module so the
-    # GraphWidget / TableWidget / KeyValueWidget / CodeBlockWidget branch
-    # logic stays in one place (the exact same one used by `ontobdc` itself).
-    _response_to_markdown: Any = _ontobdc_cli_exports["_response_to_markdown"]
-    _ux_theme_for: Any = _ontobdc_cli_exports["_ux_theme_for"]
+    @staticmethod
+    def _bind_log_strategy(
+        command: CliCommandPort,
+        logger: LogRepositoryPort,
+        log_level: Optional[LogLevel],
+    ) -> None:
+        """
+        Hand a runtime log strategy to a command that declares it takes one.
+        """
+        if not isinstance(command, LoggerAwarePort):
+            return
 
-    body_markdown: str = _response_to_markdown(
-        response,
-        response_loader_cls=_RWAL,
-        text_widget_cls=_TW,
-        widget_protocol=None,
-    )
+        log_strategy_kwargs: Dict[str, Any] = {"log_repository": logger}
+        if log_level is not None:
+            log_strategy_kwargs["log_level"] = log_level
 
-    theme: str = _ux_theme_for(response)
-    output: str = _TSR.with_content_surface(
-        body_markdown=body_markdown,
-        theme=theme,
-        operation_tile=_InfoBIMOperationTile(),
-    )
+        command.set_log_strategy(LogStrategyConfig(**log_strategy_kwargs))
 
-    # Body already has the InfoBIM logo cutout at the top (operation_tile
-    # override).  No need to print a second banner outside the frame -- that
-    # was the legacy TerminalSurface integration that produced two logos.
-    if output.strip():
-        print(output, end="" if output.endswith("\n") else "\n")
+    @staticmethod
+    def main() -> None:
+        """Entry point of the ``infobim`` console script."""
+        InfoBIMCli().execute()
 
 
-def _clear_terminal() -> None:
-    subprocess.run(["clear"], check=False)
+main = InfoBIMCli.main

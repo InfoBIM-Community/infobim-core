@@ -1,0 +1,64 @@
+statechart:
+  name: StandardInfoBIMIfcViewer
+  label:
+    en: "InfoBIM IFC 3D Viewer"
+    pt-br: "Visualizador 3D IFC InfoBIM"
+  description:
+    en: "Open the requested IFC file with IfcOpenShell, triangulate one Qt Quick 3D geometry per element, and show them in the InfoBIM 3D viewer."
+    pt-br: "Abre o arquivo IFC solicitado com IfcOpenShell, triangula uma geometria Qt Quick 3D por elemento e as exibe no visualizador 3D do InfoBIM."
+
+  root state:
+    name: standard_ifc_viewer
+    initial: undefined
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state before the IFC file is opened."
+          pt-br: "Estado inicial antes da abertura do arquivo IFC."
+        transitions:
+          - target: ifc_document_loaded
+            guard: handler.can_transit_to(to_state = IfcViewerProcessStatePort.IFC_DOCUMENT_LOADED)
+            action: handler.perform_state_transition(to_state = IfcViewerProcessStatePort.IFC_DOCUMENT_LOADED)
+            contract:
+              - after: handler.validate_state_transition(from_state = IfcViewerProcessStatePort.UNDEFINED, to_state = IfcViewerProcessStatePort.IFC_DOCUMENT_LOADED)
+
+      - name: ifc_document_loaded
+        label:
+          en: "IFC Document Loaded"
+          pt-br: "Documento IFC Carregado"
+        description:
+          en: "The IFC file was opened with IfcOpenShell and its model was injected into the context."
+          pt-br: "O arquivo IFC foi aberto com IfcOpenShell e seu modelo foi injetado no contexto."
+        transitions:
+          - target: ifc_quick3d_geometries_created
+            guard: handler.can_transit_to(to_state = IfcViewerProcessStatePort.IFC_QUICK3D_GEOMETRIES_CREATED)
+            action: handler.perform_state_transition(to_state = IfcViewerProcessStatePort.IFC_QUICK3D_GEOMETRIES_CREATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = IfcViewerProcessStatePort.IFC_DOCUMENT_LOADED, to_state = IfcViewerProcessStatePort.IFC_QUICK3D_GEOMETRIES_CREATED)
+
+      - name: ifc_quick3d_geometries_created
+        label:
+          en: "IFC Qt Quick 3D Geometries Created"
+          pt-br: "Geometrias Qt Quick 3D do IFC Criadas"
+        description:
+          en: "Every IFC element with geometry was triangulated in world coordinates into a Qt Quick 3D geometry that keeps its GlobalId, Name and IFC type."
+          pt-br: "Cada elemento IFC com geometria foi triangulado em coordenadas globais em uma geometria Qt Quick 3D que mantém seu GlobalId, Name e tipo IFC."
+        transitions:
+          - target: ifc_3d_viewer_opened
+            guard: handler.can_transit_to(to_state = IfcViewerProcessStatePort.IFC_3D_VIEWER_OPENED)
+            action: handler.perform_state_transition(to_state = IfcViewerProcessStatePort.IFC_3D_VIEWER_OPENED)
+            contract:
+              - after: handler.validate_state_transition(from_state = IfcViewerProcessStatePort.IFC_QUICK3D_GEOMETRIES_CREATED, to_state = IfcViewerProcessStatePort.IFC_3D_VIEWER_OPENED)
+
+      - name: ifc_3d_viewer_opened
+        type: final
+        label:
+          en: "IFC 3D Viewer Opened"
+          pt-br: "Visualizador 3D IFC Aberto"
+        description:
+          en: "The InfoBIM 3D viewer was opened with one pickable model per IFC element."
+          pt-br: "O visualizador 3D do InfoBIM foi aberto com um modelo selecionável por elemento IFC."

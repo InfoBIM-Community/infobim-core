@@ -1,0 +1,162 @@
+statechart:
+  name: StandardInfoBIMElementCreationFromPoint
+  label:
+    en: "InfoBIM Element Creation from Point"
+    pt-br: "Criacao de Elemento por Ponto InfoBIM"
+  description:
+    en: "Resolve the element kind named by a text against the ontologies, then create IFC elements of that kind at points picked on a drawing."
+    pt-br: "Resolve contra as ontologias o tipo de elemento nomeado por um texto e cria elementos IFC desse tipo em pontos escolhidos sobre um desenho."
+
+  root state:
+    name: standard_element_creation_from_point
+    initial: undefined
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state before the text naming the element kind is normalized."
+          pt-br: "Estado inicial antes da normalizacao do texto que nomeia o tipo do elemento."
+        transitions:
+          - target: text_normalized
+            guard: handler.can_transit_to(to_state = ElementCreationFromPointProcessStatePort.TEXT_NORMALIZED)
+            action: handler.perform_state_transition(to_state = ElementCreationFromPointProcessStatePort.TEXT_NORMALIZED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementCreationFromPointProcessStatePort.UNDEFINED, to_state = ElementCreationFromPointProcessStatePort.TEXT_NORMALIZED)
+
+      - name: text_normalized
+        label:
+          en: "Text Normalized"
+          pt-br: "Texto Normalizado"
+        description:
+          en: "The text naming the element kind has a deterministic normalized representation."
+          pt-br: "O texto que nomeia o tipo do elemento possui uma representacao normalizada deterministica."
+        transitions:
+          - target: text_language_identified
+            guard: handler.can_transit_to(to_state = ElementCreationFromPointProcessStatePort.TEXT_LANGUAGE_IDENTIFIED)
+            action: handler.perform_state_transition(to_state = ElementCreationFromPointProcessStatePort.TEXT_LANGUAGE_IDENTIFIED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementCreationFromPointProcessStatePort.TEXT_NORMALIZED, to_state = ElementCreationFromPointProcessStatePort.TEXT_LANGUAGE_IDENTIFIED)
+
+      - name: text_language_identified
+        label:
+          en: "Text Language Identified"
+          pt-br: "Idioma do Texto Identificado"
+        description:
+          en: "The language of the normalized text has been identified."
+          pt-br: "O idioma do texto normalizado foi identificado."
+        transitions:
+          - target: text_lemmatized
+            guard: handler.can_transit_to(to_state = ElementCreationFromPointProcessStatePort.TEXT_LEMMATIZED)
+            action: handler.perform_state_transition(to_state = ElementCreationFromPointProcessStatePort.TEXT_LEMMATIZED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementCreationFromPointProcessStatePort.TEXT_LANGUAGE_IDENTIFIED, to_state = ElementCreationFromPointProcessStatePort.TEXT_LEMMATIZED)
+
+      - name: text_lemmatized
+        label:
+          en: "Text Lemmatized"
+          pt-br: "Texto Lematizado"
+        description:
+          en: "The normalized text has been reduced to language-aware lemmas."
+          pt-br: "O texto normalizado foi reduzido a lemas dependentes do idioma."
+        transitions:
+          - target: ontology_term_resolved
+            guard: handler.can_transit_to(to_state = ElementCreationFromPointProcessStatePort.ONTOLOGY_TERM_RESOLVED)
+            action: handler.perform_state_transition(to_state = ElementCreationFromPointProcessStatePort.ONTOLOGY_TERM_RESOLVED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementCreationFromPointProcessStatePort.TEXT_LEMMATIZED, to_state = ElementCreationFromPointProcessStatePort.ONTOLOGY_TERM_RESOLVED)
+
+      - name: ontology_term_resolved
+        label:
+          en: "Ontology Term Resolved"
+          pt-br: "Termo da Ontologia Resolvido"
+        description:
+          en: "The lemmatized text has been resolved against the ontology dictionary."
+          pt-br: "O texto lematizado foi resolvido contra o dicionario de ontologias."
+        transitions:
+          - target: kind_representation_resolved
+            guard: handler.can_transit_to(to_state = ElementCreationFromPointProcessStatePort.KIND_REPRESENTATION_RESOLVED)
+            action: handler.perform_state_transition(to_state = ElementCreationFromPointProcessStatePort.KIND_REPRESENTATION_RESOLVED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementCreationFromPointProcessStatePort.ONTOLOGY_TERM_RESOLVED, to_state = ElementCreationFromPointProcessStatePort.KIND_REPRESENTATION_RESOLVED)
+
+      - name: kind_representation_resolved
+        label:
+          en: "Kind Representation Resolved"
+          pt-br: "Representacao do Tipo Resolvida"
+        description:
+          en: "The representations declared for the resolved kind have been fetched."
+          pt-br: "As representacoes declaradas para o tipo resolvido foram obtidas."
+        transitions:
+          - target: file_metadata_extracted
+            guard: handler.can_transit_to(to_state = ElementCreationFromPointProcessStatePort.FILE_METADATA_EXTRACTED)
+            action: handler.perform_state_transition(to_state = ElementCreationFromPointProcessStatePort.FILE_METADATA_EXTRACTED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementCreationFromPointProcessStatePort.KIND_REPRESENTATION_RESOLVED, to_state = ElementCreationFromPointProcessStatePort.FILE_METADATA_EXTRACTED)
+
+      - name: file_metadata_extracted
+        label:
+          en: "File Metadata Extracted"
+          pt-br: "Metadados do Arquivo Extraidos"
+        description:
+          en: "The MIME type and filesystem metadata of the requested drawing file have been extracted."
+          pt-br: "O tipo MIME e os metadados de sistema de arquivos do desenho solicitado foram extraidos."
+        transitions:
+          - target: drawing_documents_loaded
+            guard: handler.can_transit_to(to_state = ElementCreationFromPointProcessStatePort.DRAWING_DOCUMENTS_LOADED)
+            action: handler.perform_state_transition(to_state = ElementCreationFromPointProcessStatePort.DRAWING_DOCUMENTS_LOADED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementCreationFromPointProcessStatePort.FILE_METADATA_EXTRACTED, to_state = ElementCreationFromPointProcessStatePort.DRAWING_DOCUMENTS_LOADED)
+
+      - name: drawing_documents_loaded
+        label:
+          en: "Drawing Documents Loaded"
+          pt-br: "Documentos de Desenho Carregados"
+        description:
+          en: "The requested drawing, converted from DWG when needed, has been loaded as the original DXF document."
+          pt-br: "O desenho solicitado, convertido de DWG quando necessario, foi carregado como documento DXF original."
+        transitions:
+          - target: dxf_viewer_opened
+            guard: handler.can_transit_to(to_state = ElementCreationFromPointProcessStatePort.DXF_VIEWER_OPENED)
+            action: handler.perform_state_transition(to_state = ElementCreationFromPointProcessStatePort.DXF_VIEWER_OPENED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementCreationFromPointProcessStatePort.DRAWING_DOCUMENTS_LOADED, to_state = ElementCreationFromPointProcessStatePort.DXF_VIEWER_OPENED)
+
+      - name: dxf_viewer_opened
+        label:
+          en: "DXF Viewer Opened"
+          pt-br: "Visualizador DXF Aberto"
+        description:
+          en: "The loaded drawing has been opened in an InfoBIM 2D viewer window that stays open for the point capture."
+          pt-br: "O desenho carregado foi aberto em uma janela do visualizador 2D do InfoBIM que permanece aberta para a captura de pontos."
+        transitions:
+          - target: points_captured
+            guard: handler.can_transit_to(to_state = ElementCreationFromPointProcessStatePort.POINTS_CAPTURED)
+            action: handler.perform_state_transition(to_state = ElementCreationFromPointProcessStatePort.POINTS_CAPTURED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementCreationFromPointProcessStatePort.DXF_VIEWER_OPENED, to_state = ElementCreationFromPointProcessStatePort.POINTS_CAPTURED)
+
+      - name: points_captured
+        label:
+          en: "Points Captured"
+          pt-br: "Pontos Capturados"
+        description:
+          en: "The points at which the elements are placed have been picked on the open viewer window, in click order."
+          pt-br: "Os pontos nos quais os elementos sao posicionados foram escolhidos na janela aberta do visualizador, na ordem dos cliques."
+        transitions:
+          - target: ifc_elements_created
+            guard: handler.can_transit_to(to_state = ElementCreationFromPointProcessStatePort.IFC_ELEMENTS_CREATED)
+            action: handler.perform_state_transition(to_state = ElementCreationFromPointProcessStatePort.IFC_ELEMENTS_CREATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ElementCreationFromPointProcessStatePort.POINTS_CAPTURED, to_state = ElementCreationFromPointProcessStatePort.IFC_ELEMENTS_CREATED)
+
+      - name: ifc_elements_created
+        type: final
+        label:
+          en: "IFC Elements Created"
+          pt-br: "Elementos IFC Criados"
+        description:
+          en: "IFC elements of the resolved kind have been created at the captured points."
+          pt-br: "Elementos IFC do tipo resolvido foram criados nos pontos capturados."

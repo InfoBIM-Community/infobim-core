@@ -1,1 +1,0 @@
-"""IFC element capabilities."""

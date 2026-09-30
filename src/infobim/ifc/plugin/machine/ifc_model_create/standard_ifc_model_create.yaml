@@ -1,0 +1,45 @@
+statechart:
+  name: StandardIfcModelCreate
+  description: "Statechart for creating the IFC model file an InfoBIM project writes its own elements into."
+
+  root state:
+    name: standard_ifc_model_create
+    initial: undefined
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state, before the IFC model file exists."
+          pt-br: "Estado inicial, antes da existencia do arquivo do modelo IFC."
+        transitions:
+          - target: ifc_model_file_created
+            guard: handler.can_transit_to(to_state = IfcModelCreateProcessStatePort.IFC_MODEL_FILE_CREATED)
+            action: handler.perform_state_transition(to_state = IfcModelCreateProcessStatePort.IFC_MODEL_FILE_CREATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = IfcModelCreateProcessStatePort.UNDEFINED, to_state = IfcModelCreateProcessStatePort.IFC_MODEL_FILE_CREATED)
+
+      - name: ifc_model_file_created
+        label:
+          en: "IFC Model File Created"
+          pt-br: "Arquivo do Modelo IFC Criado"
+        description:
+          en: "The IFC model file exists at the path the run names and carries the project's IfcProject."
+          pt-br: "O arquivo do modelo IFC existe no caminho indicado pela execucao e carrega o IfcProject do projeto."
+        transitions:
+          - target: ifc_model_declared
+            guard: handler.can_transit_to(to_state = IfcModelCreateProcessStatePort.IFC_MODEL_DECLARED)
+            action: handler.perform_state_transition(to_state = IfcModelCreateProcessStatePort.IFC_MODEL_DECLARED)
+            contract:
+              - after: handler.validate_state_transition(from_state = IfcModelCreateProcessStatePort.IFC_MODEL_FILE_CREATED, to_state = IfcModelCreateProcessStatePort.IFC_MODEL_DECLARED)
+
+      - name: ifc_model_declared
+        label:
+          en: "IFC Model Declared"
+          pt-br: "Modelo IFC Declarado"
+        description:
+          en: "The project's RO-Crate states the IFC model file."
+          pt-br: "O RO-Crate do projeto declara o arquivo do modelo IFC."
+        type: final

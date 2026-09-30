@@ -1,2 +1,0 @@
-"""InfoBIM View plugins."""
-

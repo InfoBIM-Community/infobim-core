@@ -1,0 +1,43 @@
+statechart:
+  name: StandardGeometricResolverChain
+  description: "Parallel chain that resolves the geometry creation responsibilities able to handle a geometry definition. Each region is one responsibility, named by the id of the GeometryCreateResponsibilityPort capability it runs."
+
+  root state:
+    name: standard_geometric_resolver_chain
+    parallel states:
+      - name: box
+        initial: box_pending
+        states:
+          - name: box_pending
+            transitions:
+              - target: box_completed
+                guard: worker.can_handle('org.infobim.ifc.plugin.capability.transformation.geometry.box')
+                action: worker.execute_responsibility('org.infobim.ifc.plugin.capability.transformation.geometry.box')
+              - target: box_completed
+                guard: not worker.can_handle('org.infobim.ifc.plugin.capability.transformation.geometry.box')
+          - name: box_completed
+            type: final
+      - name: cylinder
+        initial: cylinder_pending
+        states:
+          - name: cylinder_pending
+            transitions:
+              - target: cylinder_completed
+                guard: worker.can_handle('org.infobim.ifc.plugin.capability.transformation.geometry.cylinder')
+                action: worker.execute_responsibility('org.infobim.ifc.plugin.capability.transformation.geometry.cylinder')
+              - target: cylinder_completed
+                guard: not worker.can_handle('org.infobim.ifc.plugin.capability.transformation.geometry.cylinder')
+          - name: cylinder_completed
+            type: final
+      - name: sphere
+        initial: sphere_pending
+        states:
+          - name: sphere_pending
+            transitions:
+              - target: sphere_completed
+                guard: worker.can_handle('org.infobim.ifc.plugin.capability.transformation.geometry.sphere')
+                action: worker.execute_responsibility('org.infobim.ifc.plugin.capability.transformation.geometry.sphere')
+              - target: sphere_completed
+                guard: not worker.can_handle('org.infobim.ifc.plugin.capability.transformation.geometry.sphere')
+          - name: sphere_completed
+            type: final
