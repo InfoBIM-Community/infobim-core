@@ -1,7 +1,0 @@
-statechart:
-  name: StandardGeometricResolverChain
-  description: "Parallel chain that resolves the geometry creation responsibilities able to handle a geometry definition."
-
-  root state:
-    name: standard_geometric_resolver_chain
-    parallel states: []

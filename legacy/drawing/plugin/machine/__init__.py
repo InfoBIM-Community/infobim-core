@@ -1,1 +1,0 @@
-"""Drawing state-machine plugins."""
