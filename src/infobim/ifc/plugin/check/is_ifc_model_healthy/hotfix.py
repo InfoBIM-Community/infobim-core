@@ -7,8 +7,6 @@ from pathlib import Path
 from datetime import datetime, timezone
 from urllib.parse import quote, unquote
 
-import ifcopenshell
-
 from ontobdc.storage.adapter.bootstrap import StorageBootstrap
 
 
@@ -208,6 +206,11 @@ def main(
 
     if not os.access(resolved_model_path, os.W_OK):
         return 1
+
+    # Imported here, not at module level: importing this module (as the
+    # project refresh machine does) must not require ifcopenshell, which is
+    # unavailable in some runtimes (e.g. Pyodide). Only checking a model does.
+    import ifcopenshell
 
     try:
         ifcopenshell.open(str(resolved_model_path))
