@@ -80,7 +80,6 @@ class IfcModelBootstrap(IfcModelBootstrapPort):
         """
         Return the title the container's own ontology carries.
         """
-        StorageNamespaceBootstrap.initialize()
         metadata_path: Path = StorageBootstrap.get_container_storage_file_path(
             project_path,
         )

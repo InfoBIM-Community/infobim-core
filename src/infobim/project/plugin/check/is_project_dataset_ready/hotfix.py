@@ -3,6 +3,12 @@ from typing import Optional
 
 from infobim.project.domain.model.contract import ProjectContract
 from ontobdc.container.adapter.dataset import DatasetTitleRepository
+from ontobdc.container.plugin.check.is_container_metadata_ready.check import (
+    main as check_container_metadata,
+)
+from ontobdc.container.plugin.check.is_container_metadata_ready.hotfix import (
+    main as hotfix_container_metadata,
+)
 from ontobdc.container.plugin.check.is_dataset_metadata_ready.hotfix import (
     main as create_dataset_metadata,
 )
@@ -31,6 +37,18 @@ def main(
         return 1
 
     if not resolved_project_path.is_dir():
+        return 1
+
+    # The dataset is indexed in the container's metadata, which must first
+    # describe the container where it is now (it may have been moved or
+    # renamed since it was written).
+    if check_container_metadata(
+        container_path=str(resolved_project_path),
+        root_path=str(resolved_root_path),
+    ) != 0 and hotfix_container_metadata(
+        container_path=str(resolved_project_path),
+        root_path=str(resolved_root_path),
+    ) != 0:
         return 1
 
     dataset_path: Path = resolved_project_path / ProjectContract.DATASET_NAME

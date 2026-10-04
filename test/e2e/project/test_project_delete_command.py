@@ -1,7 +1,6 @@
 from typing import Any, Dict, List
 from pathlib import Path
 
-import pytest
 
 from ontobdc.container.plugin.check.is_container_metadata_ready.hotfix import (
     main as prepare_metadata,

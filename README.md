@@ -2,289 +2,207 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-> **If you just landed**: InfoBIM is an **OpenBIM application of OntoBDC** for
-> transforming ordinary project information into an executable semantic mesh,
-> while keeping files in the formats and environments where they already live.
->
-> InfoBIM is implemented on top of the OntoBDC generic semantic runtime —
-> install the sibling `ontobdc/` package first, then this one.
->
-> Everything below is about InfoBIM itself: its CLI, its domain contracts,
-> its tiles and its v0.5 rebuild status.
+InfoBIM is the OpenBIM command line of the **OntoBDC** ecosystem. It turns an
+ordinary folder of building information into an **InfoBIM project**: IFC models,
+DXF/DWG drawings, PDFs, images and spreadsheets are described in a semantic
+graph. The files stay where they are, in their own formats.
 
----
+InfoBIM is a thin domain layer on top of [OntoBDC](https://github.com/EliasMPJunior/ontobdc-wip),
+the generic semantic runtime:
 
-## 3-minute Quickstart
+- **OntoBDC** owns containers, datasets, the storage index, the RO-Crate and
+  Data Package manifests, health checks and state machines.
+- **InfoBIM** adds only what depends on IFC and buildingSMART semantics.
 
-```bash
-# 1. Install prerequisites (install the sibling ontobdc package first)
-pip install infobim
+The ontologies both use, such as AECO kinds, file encodings and facades, come
+from the [brasidatacenter](https://github.com/EliasMPJunior/brasidatacenter)
+package. They are looked up by the IRI they are published at.
 
-# 3. Initialize a shared workspace
-mkdir -p ~/bim-workspace && cd ~/bim-workspace
-infobim init
+The same CLI runs in the browser in [databim.tech](https://github.com/EliasMPJunior/databim.tech),
+through Pyodide.
 
-# 4. Create a new empty InfoBIM Project
-infobim project --create ~/bim-workspace/demo-hospital
+## Install
 
-# 5. Drop IFC files / PDFs / spreadsheets into the Project folder and reprocess:
-cd ~/bim-workspace/demo-hospital
-infobim project --update
-
-# 6. Generate the Project Surface HTML and open it in the default browser
-infobim view
-```
-
-> **`--create <path>` takes a literal filesystem path, not a project name.**
-> It is resolved and used directly — InfoBIM never nests a new subfolder
-> underneath it on your behalf. This matters in two ways:
->
-> - **Pointing it at an existing folder adopts that folder in place.** Every
->   internal folder-creation step is idempotent (`mkdir(..., exist_ok=True)`),
->   so re-running `--create` against a folder that's already a Project (or
->   partway there) is safe and simply resumes/completes it — it will not fail
->   or duplicate anything. To use the folder you're already standing in:
->   ```bash
->   infobim project --create .
->   ```
-> - **A bare relative name is still a path**, resolved against your current
->   directory — it is *not* a display name. Running
->   `infobim project --create "My Project"` while already inside
->   `.../Some Existing Folder/` creates a **new subfolder**
->   `.../Some Existing Folder/My Project/`, one level deeper than you're
->   probably expecting, instead of using the folder you're in. If that's not
->   what you want, pass `.` (see above) or an absolute path to the exact
->   folder you mean.
->
-> The Project's display name is derived from the **target folder's own
-> basename** — there is currently no separate `--name`/title argument
-> independent of the path. If you want a specific display name, name (or
-> rename) the folder accordingly before running `--create`.
-
----
-
-## Core InfoBIM concepts
-
-### 1. InfoBIM Project
-
-An InfoBIM Project is a data folder that carries:
-
-- a **reserved IfcProject dataset** (with a stable and unique IFC GlobalId);
-- zero or more IFC payload datasets (`.ifc` files with elements, materials,
-  properties);
-- zero or more supplementary documents (PDFs, photos, schedules, etc);
-- metadata, semantic bindings and presentation facades inside the
-  `.__ontobdc__/` folder.
-
-The **IfcProject GlobalId** is InfoBIM's natural user-facing identifier.
-Operators never have to memorize technical container UUIDs — they refer to
-projects by GlobalId, by name, by path, or simply by being `cd`'d inside the
-project folder.
-
-### 2. ProjectIdStrategy
-
-`ProjectIdStrategy` is InfoBIM's parameter-translation layer. Before any
-command runs it normalizes *any* of these user inputs:
-
-- an explicit `--project-id <IfcGlobalId>`;
-- a `--project "project name"` or `--project /path/to/project`;
-- no flag at all, when the current working directory is already a Project.
-
-into a consistent resolved triple:
-
-```
-project_id (IfcGlobalId)  +  container_id (stable UUID)  +  project_path
-```
-
-If resolution fails it raises a `CliCommandArgumentException` telling the user
-exactly what to do next: list projects with `infobim project --list`, `cd`
-into the project folder, or retry with the right `--project-id`.
-
-### 3. IFC datasets and their facades
-
-When `infobim project --update` runs, InfoBIM processes the IFC payload
-datasets in the Project. Each dataset may expose IFC classes through its
-semantic facade, while the actual entity instances remain in the dataset and
-are read through the OntoBDC dataset repository.
-
-Across the Project, InfoBIM can therefore build:
-
-- a deduplicated IFC class catalog;
-- per-class element lists across all matching datasets;
-- per-element GlobalId lookup across the Project.
-
-The **datasets are the source of truth** consumed by the IFC commands and
-presentation layer. Dataset facades describe which IFC entity classes a
-dataset exposes and are used to discover the relevant datasets and classes.
-
-### 4. BIM tiles on the Presentation Surface
-
-When `infobim view` runs it injects InfoBIM domain-specific web components
-into the static Surface HTML. The default Surface includes:
-
-- a **Project header tile** — semantic IfcProject header (GlobalId, name,
-  description, IFC schema, project-level metrics);
-- a **Work schedule tile** — browser for `IfcWorkSchedule` context instances
-  attached to the project.
-
-The **Distributed IFC** component remains implemented and available for
-explicit use, but is not selected by the default InfoBIM Surface.
-
-The set of InfoBIM tiles is extensible; the README does not treat the current
-number of components as part of the architectural contract.
-
-The tiles are injected as JS strings and loaded client-side; the Surface
-itself is fully static and opens offline via `file://`.
-
-### 5. IfcWorkSchedule workbook service
-
-"Creating one schedule instance" means more than one sheet. An
-`IfcWorkSchedule` semantically relates to `IfcTask` rows and each `IfcTask`
-points to an `IfcTaskTime` row — a 3-entity workbook, not a 1-entity sheet.
-
-That is why InfoBIM provides a dedicated service that intercepts:
+InfoBIM needs **Python 3.11 or later**, which `brasidatacenter` requires.
+Install its two sibling packages first, then InfoBIM:
 
 ```bash
-infobim context --create "Executive Schedule" --entity IfcWorkSchedule --project-id <GlobalId>
+pip install brasidatacenter ontobdc infobim
 ```
 
-and produces a single XLSX workbook with three sheets:
+To work on the code, install the three repositories in editable mode in one
+virtual environment (`reinstall.sh` does it for InfoBIM):
 
-```
-ifc_work_schedule.xlsx
-├── IfcWorkSchedule   ← PredefinedType: PLANNED default; ACTUAL / BASELINE / USERDEFINED / NOTDEFINED allowed
-├── IfcTask           ← tasks; TaskTime column keeps reference to IfcTaskTime rows
-└── IfcTaskTime       ← time data for each task
+```bash
+pip install -e ../brasidatacenter -e ../ontobdc-wip -e .
 ```
 
-The mapping (`IfcWorkSchedule → IfcTask → IfcTaskTime`) is driven by the
-`ibim:assignsRelatedClass` predicate declared in the InfoBIM ontology so
-future multi-entity workbooks follow the exact same pattern.
+Optional extras:
 
----
-
-## v0.5 status — selective rebuild instead of a blind port
-
-InfoBIM 0.5 is a deliberate rebuild against the current generic OntoBDC
-architecture. The previous v0.4 monolithic implementation is **not** deleted:
-the full v0.4 source tree is preserved under `src/old/` while the active 0.5
-implementation lives exclusively under `src/infobim/`.
-
-### The rebuild decision rule
-
-Code is brought back from `src/old` only when:
-
-1. its responsibility still genuinely belongs to InfoBIM, and
-2. it fits the current contracts.
-
-The decision tree per legacy piece:
-
-- is this already provided by the generic runtime? → drop;
-- is this already provided by the generic view layer? → drop;
-- is this genuinely BIM/InfoBIM-specific and still valuable? → cherry-pick or
-  reimplement cleanly;
-- is this obsolete? → leave frozen in `src/old` as evidence only.
-
-`src/old` is **not** part of the distributed `infobim` Python package, is
-**not** discoverable by the active command loader, and is **not** imported at
-runtime. It is a frozen reference library.
-
----
-
-## CLI — cheat-sheet (top commands)
-
-Full user-centric reference with guards, response shapes and detailed examples
-is cataloged in
-[`../ontobdc/docs/2026-08-14-infobim-cli-command-reference.md`](../ontobdc/docs/2026-08-14-infobim-cli-command-reference.md).
-
-| Intent | Command |
+| Extra | What it adds |
 |---|---|
-| Initialize workspace | `infobim init` |
-| Check which version is active | `infobim --version` \| `-v` |
-| Create a new empty Project — `<path>` is a literal filesystem path, not a name; `.` adopts the current directory (see Quickstart note above) | `infobim project --create <abs/or/rel/path>` |
-| List every registered Project (filtered to real IfcProject-bearing containers only) | `infobim project --list` |
-| Attach a Project received via external drive / shared folder | `infobim project --project-path <path> --attach` |
-| Refresh Project datasets after dropping new IFCs/docs | `infobim project --update` (inside folder) or `--project-id <GlobalId>` |
-| Rename a Project in-place | `infobim project --project-id <id> --update --project "New Name"` |
-| Deregister a Project from the workspace index (by GlobalId) | `infobim project --delete <GlobalId>` |
-| Inventory all IFC classes + counts in a Project | `infobim ifc --project-id <id> --class --all` |
-| List all elements of one IFC class | `infobim ifc --project-id <id> --class IfcWall --all` |
-| Drill into a single element by GlobalId | `infobim ifc --project-id <id> --element <ElemGlobalId>` |
-| Browse the full entity catalog | `infobim context --entity --all` |
-| Create a full workbook-backed `IfcWorkSchedule` | `infobim context --create "Name" --entity IfcWorkSchedule --project-id <id>` |
-| Record 4D tasks and progress in the mapped workbook | `infobim 4d --task [--container <path>]` |
-| Export the mapped 4D Gantt as a paginated PDF | `infobim 4d --pdf [--container <path>] [--out <file.pdf>]` |
-| Generate + open Project Surface | `infobim view` (inside project) or `--project-id <id>` |
+| `infobim[2d]` | The 2D drawing viewer (PySide6), used to pick points on a drawing. `infobim 2d --enable` installs it into the running environment. |
+| `infobim[3d]` | The 3D viewer (PySide6). |
+| `infobim[all]` | Both. |
 
----
+To read **DWG** drawings, install the ODA File Converter. InfoBIM finds it on
+the `PATH`, or at the executable named by `INFOBIM_ODA_FILE_CONVERTER`.
 
-## Active source layout
+## Quickstart
+
+```bash
+mkdir ~/obras && cd ~/obras
+infobim init                              # makes this folder a storage root
+
+infobim project --create "Hospital Norte"   # creates and registers ./hospital-norte
+cd hospital-norte
+
+cp ~/Downloads/estrutura.ifc ~/Downloads/planta.dxf .
+infobim project --refresh                 # registers the new files in the project
+
+infobim project --inspect                 # what the project holds, from its IfcProject down
+infobim project --health                  # every check the project must pass
+infobim project --list                    # (from anywhere under the root) every project
+```
+
+Every command answers in JSON with `--json`. This is how databim.tech reads
+the answers.
+
+## Concepts
+
+### Storage root
+
+`infobim init` makes a folder a **storage root** by creating a
+`.__ontobdc__/` directory in it:
+
+- `config.yaml` is the marker that identifies the root.
+- `storage.ttl` is the index of the projects registered under the root.
+
+Commands find the root by walking up from the current directory to that
+marker. A root can be moved, or created in one file system and opened in
+another (for example, created in the browser and opened on disk): the
+locations recorded in the index are read relative to where the root is now.
+A recorded location outside the root is an error, not something silently
+tolerated.
+
+### Project
+
+A project is an **OntoBDC container**, a folder registered in the root's index,
+that carries InfoBIM's **reserved dataset**, `.__infobim__/`. That dataset
+holds the IfcProject declaration. The IfcProject's GlobalId is the project's
+identity.
 
 ```text
-infobim/ (this package)
-├── src/
-│   ├── infobim/             # active v0.5 distribution package (discovered by CLI loader)
-│   │   ├── cli/             entry-point (welcome / --version / init)
-│   │   ├── 4d/              task entry and Gantt PDF capabilities
-│   │   ├── project/         full lifecycle + ProjectIdStrategy
-│   │   ├── ifc/             IFC operational commands and catalog access
-│   │   ├── context/         entity command + IfcWorkSchedule workbook service
-│   │   └── view/            presentation repository, InfoBIM tile assets, Surface state machine
-│   └── old/                 # frozen v0.4 reference (NOT shipped, NOT imported, NOT discoverable)
-│       ├── cli/
-│       ├── project/         legacy create / detail / import / locate / update / create_element
-│       ├── context/         legacy learn-from-ifc-element flow
-│       └── view/            legacy dashboard / element / 5W2H surfaces
-├── tests/                   mirrors src/infobim/ structure
-├── docs/                    v0.5-plan, view-architecture, ADRs
-├── demo/annotation-workstream/  sample JSON payloads
-└── README.md                # this file
+hospital-norte/
+├── .__ontobdc__/
+│   ├── container.ttl             the container's metadata and its datasets
+│   ├── ro-crate-metadata.json    every file of the project, with its media type
+│   └── datapackage.json          the tabular files, for frictionless
+├── .__infobim__/                 the reserved InfoBIM dataset
+│   ├── .__ontobdc__/dataset.ttl
+│   └── payload/
+│       ├── triple/ifc_project.ttl    the IfcProject (GlobalId, name)
+│       └── linkset/dataset_facade.ttl
+├── estrutura.ifc
+└── planta.dxf
 ```
 
----
+`--create <name>` takes a **name**. The project goes into a subfolder named
+after its slug (`"Hospital Norte"` → `hospital-norte/`) under the current
+storage root. Creating a project also refreshes it, so a new project already
+passes `project --health`.
 
-### Mandatory JS syntax check before trusting any tile change
+### Choosing the project a command acts on
 
-Because InfoBIM tiles are injected as strings into the Surface, always
-validate JS syntax before shipping a modified view:
+Every project command acts on:
+
+- the project of the **current directory**, or
+- the project whose IfcProject GlobalId is given with `--global-id <GlobalId>`.
+
+### Refresh
+
+`infobim project --refresh` brings a project in line with its folder, in two
+stages:
+
+1. **OntoBDC's container refresh.** It checks the container and each of its
+   datasets, repairing what fails. It removes stray files. It rewrites the
+   Data Package and the RO-Crate, so files added, changed or removed are
+   recorded. A dataset still unhealthy after its repair **fails the refresh**,
+   naming the dataset and the checks it fails.
+2. **InfoBIM's project refresh.** It reconciles the reserved dataset and the
+   IfcProject on top of the refreshed container.
+
+Each file is recorded in the RO-Crate with a media type (`encodingFormat`):
+
+- For the domain's own formats, it is the one the AECO ontology declares:
+  `application/x-step` for IFC, `image/vnd.dxf` for DXF.
+- For any other file, it is the type built into Python.
+- An extension that neither knows gets no media type.
+
+The result is the same on every machine.
+
+## Commands
+
+| What | Command |
+|---|---|
+| Make the current folder a storage root | `infobim init` |
+| Show the version | `infobim --version` |
+| Create a project under the current root | `infobim project --create "<name>"` |
+| List the registered projects | `infobim project --list` |
+| Show what a project holds | `infobim project --inspect` |
+| The same, in an interactive tree (Textual) | `infobim project --inspect --interactive` |
+| Check a project's health | `infobim project --health` |
+| Register a project's files after they change | `infobim project --refresh` |
+| Write metadata from a source | `infobim project --from <file.csv \| file.json \| key=value,…>` |
+| Create a dataset inside a project | `infobim project --create-dataset "<title>"` |
+| Register a project copied from elsewhere | `infobim project --project-path <path> --attach` |
+| Unregister a project (its files stay) | `infobim project --delete <GlobalId>` |
+| Look a term up in the ontology dictionary | `infobim context --term "<term>" --inspect` |
+| Create IFC elements of the kind a term names, at points picked on a drawing | `infobim ifc --term "<term>" --point <drawing.dxf\|.dwg> [--ifc-model-path <model.ifc>]` |
+| Install the 2D extra | `infobim 2d --enable` |
+| Run the development tools (tests, …) of `ontobdc-dev` | `infobim dev …` |
+
+Every project command also accepts `--global-id <GlobalId>` instead of the
+current directory, and `--json` for a machine-readable answer. `infobim --help`
+lists every command with its flags.
+
+`infobim ifc --point` opens the drawing in the 2D viewer to pick the points. It
+creates the elements in the model `--ifc-model-path` names. Without it, they
+go into the project's own model, named after its IfcProject GlobalId; that
+model is created and declared in the project if it does not exist yet.
+
+## Source layout
+
+```text
+src/infobim/
+├── cli/        entry point, init, --version, the welcome screen
+├── project/    project lifecycle: create, list, inspect, health, refresh, update, attach, delete
+├── ifc/        IFC elements: creation from points, IFC model bootstrap
+├── drawing/    drawings: DXF reading, DWG → DXF through the ODA File Converter
+├── context/    the ontology dictionary command
+├── 2d/, _2d/   the 2D viewer (optional PySide6 extra) and its proxy
+├── _3d/        the 3D viewer (optional PySide6 extra)
+├── dev/        proxy to the ontobdc-dev tools
+└── shared/     configuration shared by the components
+legacy/         earlier implementation and its test suite, kept for reference; not packaged
+```
+
+Each component follows OntoBDC's plugin layout: `plugin/command/`,
+`plugin/parameter/`, `plugin/check/` (with a `check.py` and its `hotfix.py`),
+`plugin/capability/`, `plugin/machine/` (state machines in YAML), `adapter/` and
+`domain/`. The CLI discovers commands from these folders.
+
+## Tests
+
+Tests run through the `ontobdc-dev` tools:
 
 ```bash
-node --check src/infobim/view/plugin/asset/js/*.js
+infobim dev test          # the InfoBIM test suite
+infobim dev test --e2e    # the end-to-end tests, which run the real infobim executable
 ```
 
----
-
-## Boundaries: what InfoBIM deliberately does NOT reimplement
-
-To keep InfoBIM a thin domain layer, the following responsibilities are
-explicitly delegated to the generic OntoBDC runtime:
-
-- container / dataset / storage-index mechanics;
-- the 5-category strict annotation contract (Note / Issue / Classification /
-  Location / Record);
-- WorkStream machinery (Related / Suggested / Found tabs, linkset persistence
-  into `.__ontobdc__/linkset/`, Proposed/Rejected audit trail);
-- Subject Page and annotation workspace filters;
-- Surface HTML layout, tile compositor, routing and browser opening;
-- dBriefcase / dDock / dWorker product concepts and the event model.
-
-If in doubt: default to generic code, only add InfoBIM-specific code when the
-behavior genuinely depends on IFC / buildingSMART semantics.
-
----
-
-## Related documentation
-
-| Title | Path |
-|---|---|
-| Full audited CLI reference | [../ontobdc/docs/2026-08-14-infobim-cli-command-reference.md](../ontobdc/docs/2026-08-14-infobim-cli-command-reference.md) |
-| InfoBIM v0.5 rebuild plan | [docs/v0.5-plan.md](docs/v0.5-plan.md) |
-| InfoBIM View architecture & extension points | [docs/infobim-view-architecture.md](docs/infobim-view-architecture.md) |
-| ADR — visual representation parameter | [docs/adr/ADR-visual-representation-parameter.md](docs/adr/ADR-visual-representation-parameter.md) |
-| OntoBDC generic CLI reference (for the delegated commands) | [../ontobdc/docs/2026-08-14-cli-command-reference.md](../ontobdc/docs/2026-08-14-cli-command-reference.md) |
-| AI agent rules (shared agent contract) | [../ontobdc/docs/AGENTS.md](../ontobdc/docs/AGENTS.md) |
-
----
+The previous end-to-end suite now lives under `legacy/test/` with the earlier
+implementation. The active suite under `test/` is being rebuilt.
 
 ## License
 

@@ -1,6 +1,9 @@
 import re
 from typing import Any, ClassVar, Dict, List, Tuple, Pattern, Optional
 from dataclasses import dataclass
+from functools import lru_cache
+
+from ontobdc.shared.adapter.ontology import BrasidataCenterOntologyLibrary
 
 from infobim.ifc.domain.model.geometry import GeometryDefinition
 from infobim.ifc.domain.exception.creation import IfcCreationError
@@ -62,9 +65,11 @@ class KindRepresentationCreationDefinition:
     """
 
     EXACT_MATCH_TYPE: ClassVar[str] = "exact"
-    AECO_NAMESPACE: ClassVar[str] = "http://datacenter.app.br/ontology/domain/aeco/ns.ttl#"
-    IFC_ELEMENT_BINDING: ClassVar[str] = AECO_NAMESPACE + "IfcElementBinding"
-    VISUAL_REPRESENTATION: ClassVar[str] = AECO_NAMESPACE + "VisualRepresentation"
+    AECO_CATALOG_IRI: ClassVar[str] = "http://datacenter.app.br/ontology/domain/aeco/catalog.ttl"
+    #: The prefix the AECO catalog binds to the AECO core schema.
+    AECO_PREFIX: ClassVar[str] = "aeco"
+    IFC_ELEMENT_BINDING_NAME: ClassVar[str] = "IfcElementBinding"
+    VISUAL_REPRESENTATION_NAME: ClassVar[str] = "VisualRepresentation"
     SUBCLASS_OF: ClassVar[str] = "http://www.w3.org/2000/01/rdf-schema#subClassOf"
     ON_PROPERTY: ClassVar[str] = "http://www.w3.org/2002/07/owl#onProperty"
     SOME_VALUES_FROM: ClassVar[str] = "http://www.w3.org/2002/07/owl#someValuesFrom"
@@ -113,7 +118,7 @@ class KindRepresentationCreationDefinition:
             representation: Dict[str, Any]
             for representation in kind_representations[term["iri"]]:
                 role: str = cls._role(representation)
-                (bindings if role == cls.IFC_ELEMENT_BINDING else visuals).append(
+                (bindings if role == cls._aeco() + cls.IFC_ELEMENT_BINDING_NAME else visuals).append(
                     representation
                 )
             if not bindings and not visuals:
@@ -151,6 +156,17 @@ class KindRepresentationCreationDefinition:
         )
 
     @classmethod
+    @lru_cache(maxsize=1)
+    def _aeco(cls) -> str:
+        """
+        The AECO core schema namespace: the one the AECO catalog binds.
+        """
+        library: BrasidataCenterOntologyLibrary = BrasidataCenterOntologyLibrary()
+        return str(
+            library.bound_namespace(library.graph(cls.AECO_CATALOG_IRI), cls.AECO_PREFIX)
+        )
+
+    @classmethod
     def _role(cls, representation: Dict[str, Any]) -> str:
         """
         Return whether a representation is an IFC element binding or a visual.
@@ -160,7 +176,10 @@ class KindRepresentationCreationDefinition:
         ]
         roles: List[str] = [
             role
-            for role in (cls.IFC_ELEMENT_BINDING, cls.VISUAL_REPRESENTATION)
+            for role in (
+                cls._aeco() + cls.IFC_ELEMENT_BINDING_NAME,
+                cls._aeco() + cls.VISUAL_REPRESENTATION_NAME,
+            )
             if role in parents
         ]
         if len(roles) != 1:
@@ -237,7 +256,7 @@ class KindRepresentationCreationDefinition:
                 geometry_classes.append(
                     cls._single(restriction, cls.SOME_VALUES_FROM)["@id"]
                 )
-            elif property_iri.startswith(cls.AECO_NAMESPACE) and (
+            elif property_iri.startswith(cls._aeco()) and (
                 property_name in cls.DIMENSION_PARAMETERS
             ):
                 dimensions.append(
@@ -246,7 +265,7 @@ class KindRepresentationCreationDefinition:
                         cls._number(restriction, property_name),
                     )
                 )
-            elif property_iri.startswith(cls.AECO_NAMESPACE) and (
+            elif property_iri.startswith(cls._aeco()) and (
                 property_name in cls.DIRECTION_PARAMETERS
             ):
                 directions.append(
@@ -263,7 +282,7 @@ class KindRepresentationCreationDefinition:
             )
         geometry_class: str = geometry_classes[0]
         geometry_name: str = cls._local_name(geometry_class)
-        if not geometry_class.startswith(cls.AECO_NAMESPACE) or (
+        if not geometry_class.startswith(cls._aeco()) or (
             geometry_name not in cls.GEOMETRY_KINDS
         ):
             raise IfcCreationError(

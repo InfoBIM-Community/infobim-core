@@ -4,8 +4,7 @@ from typing import Any, Dict, List, Optional
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import DCTERMS, RDF
 
-from ontobdc.shared.adapter.config import UnsetProjectRootConfigDataAdapter
-from ontobdc.shared.adapter.ontology import OntologyConfigAdapter
+from ontobdc.shared.domain.vocabulary import OBDC
 from ontobdc.storage.adapter.bootstrap import StorageBootstrap
 from ontobdc.storage.adapter.file import StorageFileLocator
 from ontobdc.storage.adapter.repository import LoadedStorageGraph
@@ -17,12 +16,6 @@ from infobim.project.plugin.check.is_project_dataset_ready.check import (
 from infobim.project.plugin.check.is_project_dataset_ready.hotfix import (
     main as hotfix_project_dataset_ready,
 )
-
-_ontology_adapter: OntologyConfigAdapter = OntologyConfigAdapter(
-    config_adapter=UnsetProjectRootConfigDataAdapter(),
-)
-OBDC = _ontology_adapter.get_ontology_namespace_by_prefix("obdc")
-
 
 class ProjectGuard:
     """

@@ -21,7 +21,6 @@ _IFC64_ALPHABET: str = (
 )
 _IFC_PROJECT_SUBJECT_PREFIX: str = "urn:infobim:ifcproject/"
 
-StorageNamespaceBootstrap.initialize()
 
 # The supported ifcOWL vocabularies and the IFC release each one identifies.
 # The pairs are declared, never derived from the shape of a URI: a project

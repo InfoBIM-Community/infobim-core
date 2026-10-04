@@ -1,14 +1,10 @@
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import pytest
 
 from test.e2e.project_workspace import ProjectE2eWorkspace
 from test.e2e.cli_process_runner import CliInvocationResult, InfobimCliProcessRunner
-from infobim.project.plugin.command.inspect import ProjectInspectCommand
-from infobim.project.plugin.command.interactive_inspect import (
-    ProjectInteractiveInspectCommand,
-)
 
 
 class TestInfobimProjectInspectCommand:
@@ -29,44 +25,34 @@ class TestInfobimProjectInspectCommand:
         assert "tree" in payload["content"]
         assert isinstance(payload["content"]["tree"], dict)
 
+    @pytest.mark.parametrize("selector", ["storage_id", "ifc_global_id"])
     def test_inspect_by_global_id_identifier(
-        self, cli_runner: InfobimCliProcessRunner, tmp_path: Path
+        self, cli_runner: InfobimCliProcessRunner, tmp_path: Path, selector: str
     ) -> None:
         workspace: ProjectE2eWorkspace = ProjectE2eWorkspace.create(tmp_path)
 
+        identifier: str = (
+            workspace.identifier if selector == "storage_id" else workspace.global_id()
+        )
         result: CliInvocationResult = cli_runner.run(
-            "project", "--global-id", workspace.selector("id"), "--inspect"
+            "project", "--global-id", identifier, "--inspect"
         )
 
         assert result.exit_code == 0, result.stdout + result.stderr
         assert result.json["title"] == "InfoBIM Project"
 
-    def test_inspect_by_path_identifier(
+    def test_inspect_from_project_directory(
         self, cli_runner: InfobimCliProcessRunner, tmp_path: Path
     ) -> None:
         workspace: ProjectE2eWorkspace = ProjectE2eWorkspace.create(tmp_path)
 
-        result: CliInvocationResult = cli_runner.run(
-            "project", "--global-id", workspace.selector("id"), "--inspect"
+        result: CliInvocationResult = workspace.runner().run(
+            "project", "--inspect"
         )
 
         assert result.exit_code == 0, result.stdout + result.stderr
         assert result.json["title"] == "InfoBIM Project"
 
-    @pytest.mark.parametrize("interactive_flag", ["--interactive", "-i"])
-    def test_inspect_leaves_interactive_flag_to_interactive_command(
-        self, interactive_flag: str
-    ) -> None:
-        arguments: List[str] = [
-            "project",
-            "--global-id",
-            "urn:uuid:00000000-0000-0000-0000-000000000000",
-            "--inspect",
-            interactive_flag,
-        ]
-
-        assert not ProjectInspectCommand.accepts(arguments)
-        assert ProjectInteractiveInspectCommand.accepts(arguments)
 
     def test_inspect_requires_a_project(
         self, cli_runner: InfobimCliProcessRunner

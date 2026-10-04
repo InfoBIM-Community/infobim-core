@@ -40,8 +40,7 @@ class DrawingViewNamespaces:
         "https://standards.iso.org/iso/21597/-1/ed-1/en/Linkset#"
     )
     STEP: ClassVar[Namespace] = Namespace("https://example.org/stp2owl/ap242#")
-    SHAPES_PREFIX: ClassVar[str] = "aeco_tool"
-    SHAPES_TYPE: ClassVar[str] = "shacl"
+    SHAPES_IRI: ClassVar[str] = "http://datacenter.app.br/ontology/domain/aeco/tool/shacl.ttl"
 
 
 class DrawingViewVocabulary:

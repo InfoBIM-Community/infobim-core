@@ -4,8 +4,7 @@ from dataclasses import dataclass
 
 from rdflib import Graph, URIRef
 
-from ontobdc.shared.adapter.config import UnsetProjectRootConfigDataAdapter
-from ontobdc.shared.adapter.ontology import OntologyConfigAdapter
+from ontobdc.shared.adapter.ontology import BrasidataCenterOntologyLibrary
 
 from infobim.drawing.adapter.icdd import IcddDocuments, IcddLinkset
 from infobim.drawing.adapter.taxonomy import DrawingViewNamespaces
@@ -150,16 +149,15 @@ class DrawingViewShapes:
     """
     Load the canonical SHACL shapes the relationships must conform to.
 
-    They are the AECO tool shapes of BrasidataCenter, resolved through the
-    ontology configuration like every other semantic resource.
+    They are the AECO tool shapes of BrasidataCenter, read by their IRI like
+    every other ontology.
     """
 
     @staticmethod
     def graph() -> Graph:
-        adapter: OntologyConfigAdapter = OntologyConfigAdapter(
-            UnsetProjectRootConfigDataAdapter()
-        )
-        return adapter.get_ontology_content(
-            prefix=DrawingViewNamespaces.SHAPES_PREFIX,
-            type=DrawingViewNamespaces.SHAPES_TYPE,
-        )
+        """
+        Raises:
+            FileNotFoundError: the installed ontologies have no shapes at
+                ``DrawingViewNamespaces.SHAPES_IRI``.
+        """
+        return BrasidataCenterOntologyLibrary().graph(DrawingViewNamespaces.SHAPES_IRI)
