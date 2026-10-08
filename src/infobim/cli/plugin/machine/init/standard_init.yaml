@@ -1,0 +1,36 @@
+statechart:
+  name: StandardInfoBIMInit
+  label:
+    en: "InfoBIM Init"
+    pt-br: "Init do InfoBIM"
+  description:
+    en: "Bring an initialized OntoBDC project to one InfoBIM can be started from."
+    pt-br: "Leva um projeto OntoBDC inicializado a um projeto de onde o InfoBIM pode ser iniciado."
+
+  root state:
+    name: standard_infobim_init
+    initial: undefined
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state before the InfoBIM serve shortcut is in place."
+          pt-br: "Estado inicial antes de o atalho de serve do InfoBIM existir."
+        transitions:
+          - target: serve_shortcut_ready
+            guard: handler.can_transit_to(to_state = InfoBIMInitProcessStatePort.SERVE_SHORTCUT_READY)
+            action: handler.perform_state_transition(to_state = InfoBIMInitProcessStatePort.SERVE_SHORTCUT_READY)
+            contract:
+              - after: handler.validate_state_transition(from_state = InfoBIMInitProcessStatePort.UNDEFINED, to_state = InfoBIMInitProcessStatePort.SERVE_SHORTCUT_READY)
+
+      - name: serve_shortcut_ready
+        type: final
+        label:
+          en: "Serve Shortcut Ready"
+          pt-br: "Atalho de Serve Pronto"
+        description:
+          en: "The project root holds the InfoBIM-Serve.lnk shortcut, which runs infobim serve from the project folder. Where the platform has no shortcuts there is none to hold."
+          pt-br: "A raiz do projeto contem o atalho InfoBIM-Serve.lnk, que executa infobim serve a partir da pasta do projeto. Onde a plataforma nao tem atalhos, nao ha o que manter."

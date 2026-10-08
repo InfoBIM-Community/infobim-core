@@ -51,6 +51,7 @@ class ProjectInspectCommand(CliCommandPort):
                     "storage identifier. When omitted, resolve the "
                     "project from the current working directory."
                 ),
+                "type": "str",
             },
             {
                 "accepts": ["--inspect"],
@@ -74,6 +75,10 @@ class ProjectInspectCommand(CliCommandPort):
     DRAWINGS_CAPABILITY_ID: ClassVar[str] = (
         "org.infobim.drawing.plugin.capability.loader.container"
     )
+    INFO_CAPABILITY_ID: ClassVar[str] = (
+        "org.infobim.project.plugin.capability.loader.info"
+    )
+    INFO_TREE_KEY: ClassVar[str] = "info"
     MODELS_TREE_KEY: ClassVar[str] = "models"
     DRAWINGS_TREE_KEY: ClassVar[str] = "drawings"
 
@@ -149,6 +154,10 @@ class ProjectInspectCommand(CliCommandPort):
             RequiredParameter.of(self._request.context, self.PROJECT_PATH_KEY)
         ).expanduser().resolve()
 
+        info_branch: Dict[str, Any] = self._load_tree(
+            self.INFO_CAPABILITY_ID,
+            self.INFO_TREE_KEY,
+        )
         models_branch: Dict[str, Any] = self._load_tree(
             self.IFC_MODELS_CAPABILITY_ID,
             self.MODELS_TREE_KEY,
@@ -159,7 +168,7 @@ class ProjectInspectCommand(CliCommandPort):
         )
         tree: Dict[str, Any] = ProjectTree.of(
             project_path,
-            branches=[models_branch, drawings_branch],
+            branches=[info_branch, models_branch, drawings_branch],
         )
 
         return TreeCommandResponse(

@@ -34,6 +34,57 @@ class ModelTree:
         return cls.ROOT_NAME_BY_LANGUAGE[cls.DEFAULT_LANGUAGE]
 
 
+class InfoTree:
+    """Build the Info branch shown when inspecting a project: the attributes
+    of its IfcProject, each with its values hanging from it."""
+
+    NAME_BY_LANGUAGE: ClassVar[Dict[str, str]] = {
+        "en": "Info",
+        "pt-br": "Info",
+        "es-es": "Info",
+    }
+    DEFAULT_LANGUAGE: ClassVar[str] = "en"
+    KIND: ClassVar[str] = "section"
+    ATTRIBUTE_KIND: ClassVar[str] = "entity"
+    VALUE_KIND: ClassVar[str] = "value"
+
+    @classmethod
+    def of(cls, project_path: Path, lang: str = DEFAULT_LANGUAGE) -> Dict[str, Any]:
+        attribute: str
+        values: List[str]
+        return {
+            "name": cls.name_of(lang),
+            "kind": cls.KIND,
+            "openable": False,
+            "children": [
+                {
+                    "name": attribute,
+                    "kind": cls.ATTRIBUTE_KIND,
+                    "openable": False,
+                    "children": [
+                        {
+                            "name": value,
+                            "kind": cls.VALUE_KIND,
+                            "openable": False,
+                            "children": [],
+                        }
+                        for value in values
+                    ],
+                }
+                for attribute, values in ProjectGuard.ifc_project_attributes(
+                    project_path
+                )
+            ],
+        }
+
+    @classmethod
+    def name_of(cls, lang: str) -> str:
+        return cls.NAME_BY_LANGUAGE.get(
+            lang.lower(),
+            cls.NAME_BY_LANGUAGE[cls.DEFAULT_LANGUAGE],
+        )
+
+
 class ProjectTree:
     """
     Builds the tree a reader sees when inspecting an InfoBIM project.
@@ -60,6 +111,9 @@ class ProjectTree:
         "pt-br": "Pranchas e Desenhos",
     }
     DRAWINGS_KIND: ClassVar[str] = "drawing"
+    INFO_SECTION_NAMES: ClassVar[FrozenSet[str]] = frozenset(
+        InfoTree.NAME_BY_LANGUAGE.values()
+    )
     MODELS_SECTION_NAMES: ClassVar[FrozenSet[str]] = frozenset(
         MODELS_NAME_BY_LANGUAGE.values()
     )
@@ -96,7 +150,8 @@ class ProjectTree:
         if not isinstance(name_value, str):
             return branch
         if not (
-            name_value in cls.MODELS_SECTION_NAMES
+            name_value in cls.INFO_SECTION_NAMES
+            or name_value in cls.MODELS_SECTION_NAMES
             or name_value in cls.DRAWINGS_SECTION_NAMES
         ):
             return branch

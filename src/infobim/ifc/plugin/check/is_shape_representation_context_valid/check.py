@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 # Standalone check. It imports no sibling check/hotfix and mutates nothing.
 #
@@ -76,28 +76,88 @@ def _body_context_valid(context: Any) -> bool:
         return False
 
 
-def _shape_is_valid(shape: Any, project_context_ids: Set[int]) -> bool:
+
+def _examples(entities: List[Any], limit: int = 5) -> str:
+    listed = ", ".join(f"#{entity.id()}" for entity in entities[:limit])
+    return listed + (", …" if len(entities) > limit else "")
+
+
+def _shape_problem(shape: Any, project_context_ids: Set[int]) -> Optional[str]:
+    """Why the shape representation is not valid, None when it is."""
     try:
         context = shape.ContextOfItems
         items = list(shape.Items or [])
     except Exception:
-        return False
+        return "its context or items cannot be read"
 
-    if context is None or not items:
-        return False
+    if context is None:
+        return "it has no context"
+    if not items:
+        return "it has no representation item"
 
     root = _root_context(context)
     if root is None:
-        return False
+        return "its context does not lead to a geometric representation context"
 
     try:
         if root.id() not in project_context_ids:
-            return False
-        if getattr(shape, "RepresentationIdentifier", None) == "Body":
-            return _body_context_valid(context)
-        return True
+            return "its context does not belong to the IfcProject"
+        if getattr(shape, "RepresentationIdentifier", None) == "Body" and not _body_context_valid(context):
+            return "a Body representation is not in a Body/Model/MODEL_VIEW sub-context"
     except Exception:
-        return False
+        return "its context cannot be read"
+    return None
+
+
+def _shape_is_valid(shape: Any, project_context_ids: Set[int]) -> bool:
+    return _shape_problem(shape, project_context_ids) is None
+
+
+def diagnose(
+    project_path: Optional[str] = None,
+    ifc_model_path: Optional[str] = None,
+    container_path: Optional[str] = None,
+) -> List[str]:
+    """
+    The shape representations that do not reference a valid context of the
+    IfcProject, grouped by what is wrong with them, with the first few ids.
+    None when every one does (or the model has none).
+    """
+    del project_path, container_path
+
+    model_path = _resolve_path(ifc_model_path)
+    if model_path is None or not model_path.is_file():
+        return ["The IFC model was not given or does not exist."]
+
+    try:
+        import ifcopenshell
+
+        model = ifcopenshell.open(str(model_path))
+    except Exception as error:
+        return [f"The file does not read as an IFC STEP model: {error}"]
+
+    projects = _projects(model)
+    if len(projects) != 1:
+        return [f"The model has {len(projects)} IfcProject entities; exactly one is required."]
+
+    context_ids = _project_context_ids(projects[0])
+    if context_ids is None:
+        return ["The representation contexts of the IfcProject could not be read."]
+
+    try:
+        shapes = list(model.by_type("IfcShapeRepresentation"))
+    except Exception:
+        return ["The shape representations of the model could not be read."]
+
+    by_problem: Dict[str, List[Any]] = {}
+    for shape in shapes:
+        problem = _shape_problem(shape, context_ids)
+        if problem is not None:
+            by_problem.setdefault(problem, []).append(shape)
+    return [
+        f"{len(invalid)} of {len(shapes)} shape representations are invalid: {problem} ({_examples(invalid)})."
+        for problem, invalid in by_problem.items()
+    ]
 
 
 def main(
@@ -105,33 +165,7 @@ def main(
     ifc_model_path: Optional[str] = None,
     container_path: Optional[str] = None,
 ) -> int:
-    del project_path, container_path
-
-    model_path = _resolve_path(ifc_model_path)
-    if model_path is None or not model_path.is_file():
-        return 1
-
-    try:
-        import ifcopenshell
-
-        model = ifcopenshell.open(str(model_path))
-    except Exception:
-        return 1
-
-    projects = _projects(model)
-    if len(projects) != 1:
-        return 1
-
-    context_ids = _project_context_ids(projects[0])
-    if context_ids is None:
-        return 1
-
-    try:
-        shapes = list(model.by_type("IfcShapeRepresentation"))
-    except Exception:
-        return 1
-
-    return 0 if all(_shape_is_valid(shape, context_ids) for shape in shapes) else 1
+    return 1 if diagnose(project_path, ifc_model_path, container_path) else 0
 
 
 if __name__ == "__main__":

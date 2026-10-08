@@ -52,6 +52,7 @@ class ProjectCreateCommand(CliCommandPort, LoggerAwarePort):
                     "reserved InfoBIM dataset and registers the project "
                     "in the storage index."
                 ),
+                "type": "str",
             },
         ],
     )

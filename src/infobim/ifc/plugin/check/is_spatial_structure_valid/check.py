@@ -61,23 +61,34 @@ def _exact_parent(
         return False
 
 
-def main(
+
+def _examples(entities: List[Any], limit: int = 5) -> str:
+    listed = ", ".join(f"#{entity.id()}" for entity in entities[:limit])
+    return listed + (", …" if len(entities) > limit else "")
+
+
+def diagnose(
     project_path: Optional[str] = None,
     ifc_model_path: Optional[str] = None,
     container_path: Optional[str] = None,
-) -> int:
+) -> List[str]:
+    """
+    What is missing or misplaced in the spatial structure
+    IfcProject -> IfcSite -> IfcBuilding -> IfcBuildingStorey: one sentence per
+    level. None when the structure is complete.
+    """
     del project_path, container_path
 
     model_path = _resolve_path(ifc_model_path)
     if model_path is None or not model_path.is_file():
-        return 1
+        return ["The IFC model was not given or does not exist."]
 
     try:
         import ifcopenshell
 
         model = ifcopenshell.open(str(model_path))
-    except Exception:
-        return 1
+    except Exception as error:
+        return [f"The file does not read as an IFC STEP model: {error}"]
 
     projects = _by_type(model, "IfcProject")
     sites = _by_type(model, "IfcSite")
@@ -85,7 +96,7 @@ def main(
     storeys = _by_type(model, "IfcBuildingStorey")
     parents = _parent_map(model)
     if None in (projects, sites, buildings, storeys, parents):
-        return 1
+        return ["The spatial elements or the IfcRelAggregates of the model could not be read."]
 
     assert projects is not None
     assert sites is not None
@@ -93,21 +104,36 @@ def main(
     assert storeys is not None
     assert parents is not None
 
-    if len(projects) != 1 or not sites or not buildings or not storeys:
-        return 1
+    findings: List[str] = []
+    if len(projects) != 1:
+        findings.append(f"The model has {len(projects)} IfcProject entities; exactly one is required.")
+    for name, found in (("IfcSite", sites), ("IfcBuilding", buildings), ("IfcBuildingStorey", storeys)):
+        if not found:
+            findings.append(f"The model has no {name}.")
+    if len(projects) != 1:
+        return findings
 
-    project_ids = {projects[0].id()}
-    site_ids = {site.id() for site in sites}
-    building_ids = {building.id() for building in buildings}
+    levels = (
+        ("IfcSite", sites, {projects[0].id()}, "the IfcProject"),
+        ("IfcBuilding", buildings, {site.id() for site in sites}, "an IfcSite"),
+        ("IfcBuildingStorey", storeys, {building.id() for building in buildings}, "an IfcBuilding"),
+    )
+    for name, entities, parent_ids, expected in levels:
+        misplaced = [entity for entity in entities if not _exact_parent(entity, parents, parent_ids)]
+        if misplaced:
+            findings.append(
+                f"{len(misplaced)} of {len(entities)} {name} entities do not have exactly one "
+                f"parent, {expected} ({_examples(misplaced)})."
+            )
+    return findings
 
-    if not all(_exact_parent(site, parents, project_ids) for site in sites):
-        return 1
-    if not all(_exact_parent(building, parents, site_ids) for building in buildings):
-        return 1
-    if not all(_exact_parent(storey, parents, building_ids) for storey in storeys):
-        return 1
 
-    return 0
+def main(
+    project_path: Optional[str] = None,
+    ifc_model_path: Optional[str] = None,
+    container_path: Optional[str] = None,
+) -> int:
+    return 1 if diagnose(project_path, ifc_model_path, container_path) else 0
 
 
 if __name__ == "__main__":

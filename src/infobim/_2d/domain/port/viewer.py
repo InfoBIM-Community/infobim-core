@@ -37,6 +37,18 @@ class DxfViewerSessionPort(ABC):
         ...
 
     @abstractmethod
+    def request_annotation_details(self) -> Dict[str, str]:
+        """
+        Block while the user fills in the details of an annotation on the
+        open window, and return them by key: ``title`` always, ``text`` and
+        ``author`` when filled in.
+
+        Raises:
+            RuntimeError: the user cancelled the form.
+        """
+        ...
+
+    @abstractmethod
     def close(self) -> None:
         """Release the window."""
         ...

@@ -353,38 +353,95 @@ def _valid_derived_unit(unit: Any, expected: Dimensions) -> bool:
     return _dimensions(unit) == expected
 
 
+def _unit_findings(
+    project: Any,
+    expected_named: Dict[str, Dimensions],
+    expected_derived: Dict[str, Recipe],
+) -> List[str]:
+    """
+    The units of the global assignment that are missing, repeated or
+    dimensionally wrong, one sentence each. None when it is complete.
+    """
+    units = _assignment_units(project)
+    if units is None:
+        return ["The IfcProject has no unit assignment (UnitsInContext)."]
+
+    indexed = _indexed_units(units)
+    if indexed is None:
+        return ["The units of the assignment could not be read."]
+    named, derived = indexed
+
+    missing: List[str] = []
+    repeated: List[str] = []
+    wrong: List[str] = []
+    for unit_type, expected_dimensions in expected_named.items():
+        candidates = named.get(unit_type, [])
+        if not candidates:
+            missing.append(unit_type)
+        elif len(candidates) != 1:
+            repeated.append(f"{unit_type} ({len(candidates)}x)")
+        elif not _valid_named_unit(candidates[0], expected_dimensions):
+            wrong.append(unit_type)
+
+    for unit_type, recipe in expected_derived.items():
+        candidates = derived.get(unit_type, [])
+        if not candidates:
+            missing.append(unit_type)
+        elif len(candidates) != 1:
+            repeated.append(f"{unit_type} ({len(candidates)}x)")
+        elif not _valid_derived_unit(candidates[0], _recipe_dimensions(recipe)):
+            wrong.append(unit_type)
+
+    findings: List[str] = []
+    if missing:
+        findings.append(f"{len(missing)} units are not defined: {', '.join(missing)}.")
+    if repeated:
+        findings.append(f"Units defined more than once: {', '.join(repeated)}.")
+    if wrong:
+        findings.append(f"Units with the wrong dimensions: {', '.join(wrong)}.")
+    return findings
+
+
 def _is_complete(
     project: Any,
     expected_named: Dict[str, Dimensions],
     expected_derived: Dict[str, Recipe],
 ) -> bool:
-    units = _assignment_units(project)
-    if units is None:
-        return False
+    return not _unit_findings(project, expected_named, expected_derived)
 
-    indexed = _indexed_units(units)
-    if indexed is None:
-        return False
-    named, derived = indexed
 
-    for unit_type, expected_dimensions in expected_named.items():
-        candidates = named.get(unit_type, [])
-        if len(candidates) != 1:
-            return False
-        if not _valid_named_unit(candidates[0], expected_dimensions):
-            return False
+def diagnose(
+    project_path: Optional[str] = None,
+    ifc_model_path: Optional[str] = None,
+    container_path: Optional[str] = None,
+) -> List[str]:
+    """
+    Why the global unit assignment of the model is not complete: which units
+    are missing, repeated or dimensionally wrong. None when it is complete.
+    """
+    del project_path, container_path
 
-    for unit_type, recipe in expected_derived.items():
-        candidates = derived.get(unit_type, [])
-        if len(candidates) != 1:
-            return False
-        if not _valid_derived_unit(
-            candidates[0],
-            _recipe_dimensions(recipe),
-        ):
-            return False
+    model_path = _resolve_path(ifc_model_path)
+    if model_path is None or not model_path.is_file():
+        return ["The IFC model was not given or does not exist."]
 
-    return True
+    try:
+        import ifcopenshell
+
+        model = ifcopenshell.open(str(model_path))
+    except Exception as error:
+        return [f"The file does not read as an IFC STEP model: {error}"]
+
+    projects = _projects(model)
+    if len(projects) != 1:
+        return [f"The model has {len(projects)} IfcProject entities; exactly one is required."]
+
+    expected = _expected_units(model)
+    if expected is None:
+        return ["The units the model's schema defines could not be determined."]
+    expected_named, expected_derived = expected
+
+    return _unit_findings(projects[0], expected_named, expected_derived)
 
 
 def main(
@@ -392,29 +449,7 @@ def main(
     ifc_model_path: Optional[str] = None,
     container_path: Optional[str] = None,
 ) -> int:
-    del project_path, container_path
-
-    model_path = _resolve_path(ifc_model_path)
-    if model_path is None or not model_path.is_file():
-        return 1
-
-    try:
-        import ifcopenshell
-
-        model = ifcopenshell.open(str(model_path))
-    except Exception:
-        return 1
-
-    projects = _projects(model)
-    if len(projects) != 1:
-        return 1
-
-    expected = _expected_units(model)
-    if expected is None:
-        return 1
-    expected_named, expected_derived = expected
-
-    return 0 if _is_complete(projects[0], expected_named, expected_derived) else 1
+    return 1 if diagnose(project_path, ifc_model_path, container_path) else 0
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 # Standalone check. It imports no sibling check/hotfix and mutates nothing.
 #
@@ -61,21 +61,71 @@ def _local_placement_valid(placement: Any) -> bool:
     return True
 
 
-def _product_valid(product: Any) -> bool:
+
+def _examples(entities: List[Any], limit: int = 5) -> str:
+    listed = ", ".join(f"#{entity.id()}" for entity in entities[:limit])
+    return listed + (", …" if len(entities) > limit else "")
+
+
+def _product_problem(product: Any) -> Optional[str]:
+    """Why the product's placement is not valid, None when it is."""
     if not _requires_placement(product):
-        return True
+        return None
     try:
         placement = product.ObjectPlacement
     except Exception:
-        return False
+        return "its placement cannot be read"
     if placement is None:
-        return False
+        return "it has no ObjectPlacement"
     try:
         if placement.is_a() == "IfcLocalPlacement":
-            return _local_placement_valid(placement)
-        return bool(placement.is_a())
+            if not _local_placement_valid(placement):
+                return "its local placement chain is invalid or cyclic"
+            return None
+        return None if bool(placement.is_a()) else "its placement is of an unknown type"
     except Exception:
-        return False
+        return "its placement cannot be read"
+
+
+def _product_valid(product: Any) -> bool:
+    return _product_problem(product) is None
+
+
+def diagnose(
+    project_path: Optional[str] = None,
+    ifc_model_path: Optional[str] = None,
+    container_path: Optional[str] = None,
+) -> List[str]:
+    """
+    The products that need an ObjectPlacement and do not have a valid one,
+    grouped by what is wrong, with the first few ids. None when all do.
+    """
+    del project_path, container_path
+
+    model_path = _resolve_path(ifc_model_path)
+    if model_path is None or not model_path.is_file():
+        return ["The IFC model was not given or does not exist."]
+
+    try:
+        import ifcopenshell
+
+        model = ifcopenshell.open(str(model_path))
+    except Exception as error:
+        return [f"The file does not read as an IFC STEP model: {error}"]
+
+    products = _products(model)
+    if products is None:
+        return ["The products of the model could not be read."]
+
+    by_problem: Dict[str, List[Any]] = {}
+    for product in products:
+        problem = _product_problem(product)
+        if problem is not None:
+            by_problem.setdefault(problem, []).append(product)
+    return [
+        f"{len(invalid)} of {len(products)} products are invalid: {problem} ({_examples(invalid)})."
+        for problem, invalid in by_problem.items()
+    ]
 
 
 def main(
@@ -83,24 +133,7 @@ def main(
     ifc_model_path: Optional[str] = None,
     container_path: Optional[str] = None,
 ) -> int:
-    del project_path, container_path
-
-    model_path = _resolve_path(ifc_model_path)
-    if model_path is None or not model_path.is_file():
-        return 1
-
-    try:
-        import ifcopenshell
-
-        model = ifcopenshell.open(str(model_path))
-    except Exception:
-        return 1
-
-    products = _products(model)
-    if products is None:
-        return 1
-
-    return 0 if all(_product_valid(product) for product in products) else 1
+    return 1 if diagnose(project_path, ifc_model_path, container_path) else 0
 
 
 if __name__ == "__main__":

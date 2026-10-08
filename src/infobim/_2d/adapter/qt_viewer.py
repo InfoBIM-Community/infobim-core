@@ -6,6 +6,7 @@ from ezdxf.addons.xqt import QtCore as qc
 from ezdxf.addons.xqt import QtWidgets as qw
 from ezdxf.addons.drawing.qtviewer import CADWidget, CADGraphicsView
 
+from infobim._2d.adapter.annotation_details_form import AnnotationDetailsForm
 from infobim._2d.domain.port.viewer import DxfViewerSessionPort
 
 
@@ -263,6 +264,16 @@ class DxfViewerSession(DxfViewerSessionPort):
                 "Point capture was closed before a double click finished it."
             )
         return capture.points()
+
+    def request_annotation_details(self) -> Dict[str, str]:
+        form: AnnotationDetailsForm = AnnotationDetailsForm(self._dialog)
+        execute_form: Any = getattr(form, "exec", None) or getattr(form, "exec_")
+        accepted: bool = bool(execute_form())
+        details: Dict[str, str] = form.details()
+        form.deleteLater()
+        if not accepted:
+            raise RuntimeError("The annotation details form was cancelled.")
+        return details
 
     def close(self) -> None:
         self._dialog.close()

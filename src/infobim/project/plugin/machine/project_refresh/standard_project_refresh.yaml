@@ -40,25 +40,11 @@ statechart:
           en: "The reserved .__infobim__ dataset is re-validated, re-titled and re-indexed against the freshly-refreshed container metadata."
           pt-br: "O dataset reservado .__infobim__ é re-validado, re-titulado e re-indexado contra os metadados do container recém-refrescado."
         transitions:
-          - target: ifc_models_refreshed
-            guard: handler.can_transit_to(to_state = ProjectRefreshProcessStatePort.IFC_MODELS_REFRESHED)
-            action: handler.perform_state_transition(to_state = ProjectRefreshProcessStatePort.IFC_MODELS_REFRESHED)
-            contract:
-              - after: handler.validate_state_transition(from_state = ProjectRefreshProcessStatePort.PROJECT_DATASET_REFRESHED, to_state = ProjectRefreshProcessStatePort.IFC_MODELS_REFRESHED)
-
-      - name: ifc_models_refreshed
-        label:
-          en: "IfcModels Refreshed"
-          pt-br: "Modelos Ifc Atualizados"
-        description:
-          en: "Every IFC model declared by the project's RO-Crate manifest is re-validated against the five per-model geometric integrity checks: health, units, geometric context, shape-representation context and spatial structure."
-          pt-br: "Cada modelo IFC declarado no manifesto RO-Crate do projeto é re-validado contra os cinco checks de integridade geométrica por modelo: saúde, unidades, contexto geométrico, contexto de representação de forma e estrutura espacial."
-        transitions:
           - target: ifc_project_refreshed
             guard: handler.can_transit_to(to_state = ProjectRefreshProcessStatePort.IFC_PROJECT_REFRESHED)
             action: handler.perform_state_transition(to_state = ProjectRefreshProcessStatePort.IFC_PROJECT_REFRESHED)
             contract:
-              - after: handler.validate_state_transition(from_state = ProjectRefreshProcessStatePort.IFC_MODELS_REFRESHED, to_state = ProjectRefreshProcessStatePort.IFC_PROJECT_REFRESHED)
+              - after: handler.validate_state_transition(from_state = ProjectRefreshProcessStatePort.PROJECT_DATASET_REFRESHED, to_state = ProjectRefreshProcessStatePort.IFC_PROJECT_REFRESHED)
 
       - name: ifc_project_refreshed
         label:

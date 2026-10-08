@@ -39,6 +39,12 @@ from ontobdc.cli.domain.request.command import CliCommandRequest
 from ontobdc.cli.domain.exception.command import CliCommandArgumentException
 from ontobdc.shared.facade.adapter.logger import ActiveLogRepositoryBroker
 
+DESCRIPTION: Dict[str, str] = {
+    "en": "Core entry points of the InfoBIM executable: initialize a workspace, run the local server and report the installed version.",
+    "pt": "Pontos de entrada principais do executável InfoBIM: inicializa um workspace, executa o servidor local e informa a versão instalada.",
+    "es": "Puntos de entrada principales del ejecutable InfoBIM: inicializa un workspace, ejecuta el servidor local e informa la versión instalada.",
+}
+
 
 class InfoBIMCli:
     """

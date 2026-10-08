@@ -33,6 +33,7 @@ class ProjectCreateDatasetCommand(ContainerCommandProxy):
                     "own metadata, title and index entry; its title is "
                     "given alongside --create-dataset."
                 ),
+                "type": "str",
             },
             {
                 "accepts": ["--create-dataset"],
@@ -43,6 +44,7 @@ class ProjectCreateDatasetCommand(ContainerCommandProxy):
                     "project is resolved from the current working "
                     "directory."
                 ),
+                "type": "str",
             },
         ],
     )

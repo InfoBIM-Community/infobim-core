@@ -50,12 +50,14 @@ class IfcElementCreationFromPointCommand(CliCommandPort):
                     "IfcProject. When omitted, resolve the project from the "
                     "current working directory."
                 ),
+                "type": "str",
             },
             {
                 "accepts": ["--term"],
                 "valued": True,
                 "parameter": "text",
                 "description": "Name of the element kind, in natural language.",
+                "type": "str",
             },
             {
                 "accepts": ["--point"],
@@ -64,6 +66,7 @@ class IfcElementCreationFromPointCommand(CliCommandPort):
                 "description": (
                     "DXF or DWG drawing on which the element points are picked."
                 ),
+                "type": "Path",
                 "usage": (
                     'infobim ifc [--global-id <project-global-id>] --term "<term>" '
                     "--point <drawing.dxf|drawing.dwg> [--ifc-model-path <model.ifc>]"
@@ -78,6 +81,7 @@ class IfcElementCreationFromPointCommand(CliCommandPort):
                     "omitted, the project's own model, named after its "
                     "IfcProject GlobalId, created if it does not exist yet."
                 ),
+                "type": "Path",
             },
         ],
     )

@@ -17,7 +17,6 @@ class ProjectRefreshProcessState(ProjectRefreshProcessStatePort):
 
     UNDEFINED = "__undefined__"
     PROJECT_DATASET_REFRESHED = "__project_dataset_refreshed__"
-    IFC_MODELS_REFRESHED = "__ifc_models_refreshed__"
     IFC_PROJECT_REFRESHED = "__ifc_project_refreshed__"
     PROJECT_READY_TO_RENDER = "__project_ready_to_render__"
 

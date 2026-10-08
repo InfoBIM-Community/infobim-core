@@ -62,37 +62,57 @@ def _is_model_context(context: Any) -> bool:
         return False
 
 
-def main(
+def diagnose(
     project_path: Optional[str] = None,
     ifc_model_path: Optional[str] = None,
     container_path: Optional[str] = None,
-) -> int:
+) -> List[str]:
+    """
+    Why the project does not own exactly one 3D Model context with a 3D world
+    coordinate system: none when it does.
+    """
     del project_path, container_path
 
     model_path = _resolve_path(ifc_model_path)
     if model_path is None or not model_path.is_file():
-        return 1
+        return ["The IFC model was not given or does not exist."]
 
     try:
         import ifcopenshell
 
         model = ifcopenshell.open(str(model_path))
-    except Exception:
-        return 1
+    except Exception as error:
+        return [f"The file does not read as an IFC STEP model: {error}"]
 
     projects = _projects(model)
     if len(projects) != 1:
-        return 1
+        return [f"The model has {len(projects)} IfcProject entities; exactly one is required."]
 
     contexts = _direct_contexts(projects[0])
     if contexts is None:
-        return 1
+        return ["The representation contexts of the IfcProject could not be read."]
 
     contexts_3d = [context for context in contexts if _dimension(context) == 3]
     if len(contexts_3d) != 1:
-        return 1
+        return [
+            f"The IfcProject owns {len(contexts_3d)} direct 3D geometric representation "
+            "contexts; exactly one is required."
+        ]
 
-    return 0 if _is_model_context(contexts_3d[0]) else 1
+    if not _is_model_context(contexts_3d[0]):
+        return [
+            "The 3D context is not a Model context with a 3D world coordinate system "
+            "(IfcAxis2Placement3D)."
+        ]
+    return []
+
+
+def main(
+    project_path: Optional[str] = None,
+    ifc_model_path: Optional[str] = None,
+    container_path: Optional[str] = None,
+) -> int:
+    return 1 if diagnose(project_path, ifc_model_path, container_path) else 0
 
 
 if __name__ == "__main__":

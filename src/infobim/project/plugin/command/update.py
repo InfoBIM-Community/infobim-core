@@ -29,10 +29,11 @@ class ProjectUpdateCommand(ContainerCommandProxy):
                     "storage identifier. When omitted, resolve the "
                     "project from the current working directory."
                 ),
+                "type": "str",
             },
             {
                 "accepts": [
-                    "--from",
+                    "--update",
                 ],
                 "valued": True,
                 "parameter": "update_source",
@@ -42,6 +43,7 @@ class ProjectUpdateCommand(ContainerCommandProxy):
                     ".csv file, a path to a .json file, or inline "
                     "key=value assignments separated by commas."
                 ),
+                "type": "str",
             },
         ],
     )

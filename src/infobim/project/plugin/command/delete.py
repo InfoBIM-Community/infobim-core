@@ -32,6 +32,7 @@ class ProjectDeleteCommand(ContainerCommandProxy):
                     "removed; the project files on disk are left "
                     "untouched."
                 ),
+                "type": "str",
             },
             {
                 "accepts": [
@@ -44,6 +45,7 @@ class ProjectDeleteCommand(ContainerCommandProxy):
                     "contract so a plain container cannot be removed "
                     "through this command."
                 ),
+                "type": "str",
             },
         ],
     )

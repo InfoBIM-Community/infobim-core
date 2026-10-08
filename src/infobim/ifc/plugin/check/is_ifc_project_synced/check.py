@@ -144,20 +144,56 @@ def _entity_value(entity: Any, attribute_name: str) -> Optional[str]:
     return str(value)
 
 
-def _is_synced(model: Any, source: Dict[str, Optional[str]]) -> bool:
+def _sync_findings(model: Any, source: Dict[str, Optional[str]]) -> List[str]:
     try:
         projects = list(model.by_type("IfcProject"))
     except Exception:
-        return False
+        return ["The model's IfcProject entities could not be read."]
 
     if len(projects) != 1:
-        return False
+        return [f"The model has {len(projects)} IfcProject entities; exactly one is required."]
 
     project = projects[0]
-    return all(
-        _entity_value(project, attribute_name) == expected_value
+    return [
+        f"IfcProject.{attribute_name} is {_entity_value(project, attribute_name)!r}; "
+        f"the project declares {expected_value!r}."
         for attribute_name, expected_value in source.items()
-    )
+        if _entity_value(project, attribute_name) != expected_value
+    ]
+
+
+def _is_synced(model: Any, source: Dict[str, Optional[str]]) -> bool:
+    return not _sync_findings(model, source)
+
+
+def diagnose(
+    project_path: Optional[str] = None,
+    ifc_model_path: Optional[str] = None,
+    container_path: Optional[str] = None,
+) -> List[str]:
+    """
+    How the IfcProject of the model differs from the one the project
+    declares: one sentence per attribute, none when they agree.
+    """
+    resolved_project_path = _project_path(project_path, container_path)
+    resolved_model_path = _resolve_path(ifc_model_path)
+    if resolved_project_path is None or resolved_model_path is None:
+        return ["The project or the IFC model was not given."]
+    if not resolved_model_path.is_file():
+        return [f"The IFC file {resolved_model_path.name} does not exist."]
+
+    source = _source_attributes(resolved_project_path)
+    if source is None:
+        return ["The project's descriptor does not state exactly one IfcProject with its attributes."]
+
+    try:
+        import ifcopenshell
+
+        model = ifcopenshell.open(str(resolved_model_path))
+    except Exception as error:
+        return [f"The file does not read as an IFC STEP model: {error}"]
+
+    return _sync_findings(model, source)
 
 
 def main(
@@ -165,25 +201,7 @@ def main(
     ifc_model_path: Optional[str] = None,
     container_path: Optional[str] = None,
 ) -> int:
-    resolved_project_path = _project_path(project_path, container_path)
-    resolved_model_path = _resolve_path(ifc_model_path)
-    if resolved_project_path is None or resolved_model_path is None:
-        return 1
-    if not resolved_model_path.is_file():
-        return 1
-
-    source = _source_attributes(resolved_project_path)
-    if source is None:
-        return 1
-
-    try:
-        import ifcopenshell
-
-        model = ifcopenshell.open(str(resolved_model_path))
-    except Exception:
-        return 1
-
-    return 0 if _is_synced(model, source) else 1
+    return 1 if diagnose(project_path, ifc_model_path, container_path) else 0
 
 
 if __name__ == "__main__":

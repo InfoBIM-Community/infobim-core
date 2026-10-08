@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import DCTERMS, RDF
@@ -210,9 +210,9 @@ class ProjectGuard:
         return Path(location).expanduser().resolve()
 
     @classmethod
-    def ifc_project_global_id(cls, project_path: Path) -> Optional[str]:
+    def _ifc_project_graph(cls, project_path: Path) -> Optional[Tuple[Graph, URIRef]]:
         """
-        Return the GlobalId of the IfcProject the project declares.
+        Return the graph that declares the project's IfcProject, and its subject.
 
         None when the project carries no readable IfcProject — which is what
         a container that is not a project looks like from here, and also
@@ -247,8 +247,23 @@ class ProjectGuard:
         if len(subjects) != 1:
             return None
 
+        return graph, subjects[0]
+
+    @classmethod
+    def ifc_project_global_id(cls, project_path: Path) -> Optional[str]:
+        """
+        Return the GlobalId of the IfcProject the project declares, or None
+        when it declares no single one.
+        """
+        declared: Optional[Tuple[Graph, URIRef]] = cls._ifc_project_graph(project_path)
+        if declared is None:
+            return None
+
+        graph: Graph
+        subject: URIRef
+        graph, subject = declared
         for value in graph.objects(
-            subjects[0],
+            subject,
             URIRef(ProjectContract.IFC_PROJECT_GLOBAL_ID_PROPERTY),
         ):
             global_id: str = str(value).strip()
@@ -256,3 +271,41 @@ class ProjectGuard:
                 return global_id
 
         return None
+
+    @classmethod
+    def ifc_project_attributes(cls, project_path: Path) -> List[Tuple[str, List[str]]]:
+        """
+        Return the attributes the IfcProject declares, each with its values.
+
+        An attribute is a predicate of the IfcProject other than its type;
+        its name is the IFC attribute the predicate stands for
+        (``name_IfcRoot`` is ``Name``). Empty when the project declares no
+        single IfcProject.
+        """
+        declared: Optional[Tuple[Graph, URIRef]] = cls._ifc_project_graph(project_path)
+        if declared is None:
+            return []
+
+        graph: Graph
+        subject: URIRef
+        graph, subject = declared
+        values_by_attribute: Dict[str, List[str]] = {}
+        predicate: Any
+        value: Any
+        for predicate, value in graph.predicate_objects(subject):
+            if predicate == RDF.type:
+                continue
+
+            name: str = cls._attribute_name(str(predicate))
+            values_by_attribute.setdefault(name, []).append(str(value))
+
+        return [
+            (name, sorted(values))
+            for name, values in sorted(values_by_attribute.items())
+        ]
+
+    @staticmethod
+    def _attribute_name(predicate: str) -> str:
+        local_name: str = predicate.rsplit("#", 1)[-1].rsplit("/", 1)[-1]
+        attribute: str = local_name.split("_", 1)[0]
+        return attribute[:1].upper() + attribute[1:]

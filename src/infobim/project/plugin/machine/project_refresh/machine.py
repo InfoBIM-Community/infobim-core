@@ -24,9 +24,6 @@ from infobim.project.plugin.machine.project_refresh.port import (
 from infobim.project.plugin.machine.project_refresh.state import (
     ProjectRefreshProcessState,
 )
-from infobim.project.plugin.check.is_ifc_models_refreshed.check import (
-    main as check_ifc_models_refreshed,
-)
 from infobim.project.plugin.check.is_ifc_project_refreshed.check import (
     main as check_ifc_project_refreshed,
 )
@@ -65,15 +62,6 @@ class ProjectRefreshStateEvaluatorAdapter(ProjectRefreshStateEvaluatorPort):
             return reached_state
 
         reached_state = ProjectRefreshProcessState.PROJECT_DATASET_REFRESHED
-
-        if check_ifc_models_refreshed(
-            project_path=str(project_path),
-            container_path=str(project_path),
-            root_path=str(root_path),
-        ) != 0:
-            return reached_state
-
-        reached_state = ProjectRefreshProcessState.IFC_MODELS_REFRESHED
 
         if check_ifc_project_refreshed(project_path=str(project_path)) != 0:
             return reached_state
@@ -114,10 +102,6 @@ class ProjectRefreshStateTransitionHandler(ProjectRefreshStateTransitionHandlerP
         ProjectRefreshProcessState.PROJECT_DATASET_REFRESHED: (
             "org.infobim.project.plugin.capability.transformation."
             "target.project_dataset_refreshed"
-        ),
-        ProjectRefreshProcessState.IFC_MODELS_REFRESHED: (
-            "org.infobim.project.plugin.capability.transformation."
-            "target.ifc_models_refreshed"
         ),
         ProjectRefreshProcessState.IFC_PROJECT_REFRESHED: (
             "org.infobim.project.plugin.capability.transformation."

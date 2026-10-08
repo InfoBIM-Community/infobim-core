@@ -30,6 +30,12 @@ class TwoDProxyCommand(CliCommandPort, LoggerAwarePort):
     )
 
     COMPONENT: ClassVar[str] = "2d"
+    # Declarative link to the loader that resolves this proxy's real,
+    # privately-housed commands (the same one used in _resolve_command
+    # below) -- lets static tooling such as the doc generator show those
+    # real commands in place of this one-line stub, as if they were
+    # natively registered under the public "2d" component.
+    PROXIED_COMMAND_LOADER: ClassVar[Type[TwoDCommandLoader]] = TwoDCommandLoader
 
     @staticmethod
     def accepts(args: List[str]) -> bool:

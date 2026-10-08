@@ -40,6 +40,7 @@ class ProjectHealthCommand(ContainerCommandProxy):
                     "container storage identifier. When omitted, resolve "
                     "the project from the current working directory."
                 ),
+                "type": "str",
             },
             {
                 "accepts": ["--health"],

@@ -6,13 +6,15 @@ import pytest
 from rdflib import Graph
 from rdflib.namespace import DCTERMS
 
+from ontobdc.shared.domain.vocabulary import CT
+
 from test.e2e.project_workspace import ProjectE2eWorkspace
 from test.e2e.cli_process_runner import CliInvocationResult, InfobimCliProcessRunner
 
 
 class TestInfobimProjectUpdateCommand:
     """
-    E2E coverage for `infobim project --update --from <source> --json`.
+    E2E coverage for `infobim project --update <source> --json`.
 
     The source is accepted in three shapes: a .csv file, a .json file, or
     inline key=value assignments. A source that parses is written into the
@@ -32,7 +34,7 @@ class TestInfobimProjectUpdateCommand:
         assert cli_runner.run("init").exit_code == 0
 
         result: CliInvocationResult = cli_runner.run(
-            "project", "--update", "--from", "title=Sem Container"
+            "project", "--update", "title=Sem Container"
         )
 
         assert result.exit_code == 1
@@ -53,7 +55,7 @@ class TestInfobimProjectUpdateCommand:
     def test_source_flag_without_a_value_is_rejected(
         self, cli_runner: InfobimCliProcessRunner
     ) -> None:
-        result: CliInvocationResult = cli_runner.run("project", "--update", "--from")
+        result: CliInvocationResult = cli_runner.run("project", "--update")
 
         assert result.exit_code == 1
         assert "Invalid command arguments" in self._error_of(result)
@@ -66,7 +68,7 @@ class TestInfobimProjectUpdateCommand:
         self, cli_runner: InfobimCliProcessRunner
     ) -> None:
         result: CliInvocationResult = cli_runner.run(
-            "project", "--update", "--from", "so-texto"
+            "project", "--update", "so-texto"
         )
 
         assert result.exit_code == 1
@@ -76,7 +78,7 @@ class TestInfobimProjectUpdateCommand:
         self, cli_runner: InfobimCliProcessRunner
     ) -> None:
         result: CliInvocationResult = cli_runner.run(
-            "project", "--update", "--from", ""
+            "project", "--update", ""
         )
 
         assert result.exit_code == 1
@@ -90,7 +92,7 @@ class TestInfobimProjectUpdateCommand:
         self, cli_runner: InfobimCliProcessRunner
     ) -> None:
         result: CliInvocationResult = cli_runner.run(
-            "project", "--update", "--from", "ausente.json"
+            "project", "--update", "ausente.json"
         )
 
         assert result.exit_code == 1
@@ -102,7 +104,7 @@ class TestInfobimProjectUpdateCommand:
         self, cli_runner: InfobimCliProcessRunner
     ) -> None:
         result: CliInvocationResult = cli_runner.run(
-            "project", "--update", "--from", "ausente.csv"
+            "project", "--update", "ausente.csv"
         )
 
         assert self._error_of(result) == (
@@ -116,7 +118,7 @@ class TestInfobimProjectUpdateCommand:
         source.write_text(json.dumps(["title", "description"]), encoding="utf-8")
 
         result: CliInvocationResult = cli_runner.run(
-            "project", "--update", "--from", "list.json"
+            "project", "--update", "list.json"
         )
 
         assert self._error_of(result) == (
@@ -130,7 +132,7 @@ class TestInfobimProjectUpdateCommand:
         source.write_text("title\nPrimeiro\nSegundo\n", encoding="utf-8")
 
         result: CliInvocationResult = cli_runner.run(
-            "project", "--update", "--from", "rows.csv"
+            "project", "--update", "rows.csv"
         )
 
         assert self._error_of(result) == (
@@ -144,7 +146,7 @@ class TestInfobimProjectUpdateCommand:
         source.write_text("title,description\n", encoding="utf-8")
 
         result: CliInvocationResult = cli_runner.run(
-            "project", "--update", "--from", "header.csv"
+            "project", "--update", "header.csv"
         )
 
         assert self._error_of(result) == (
@@ -155,7 +157,7 @@ class TestInfobimProjectUpdateCommand:
         self, cli_runner: InfobimCliProcessRunner
     ) -> None:
         result: CliInvocationResult = cli_runner.run(
-            "project", "--update", "--from", "=semchave"
+            "project", "--update", "=semchave"
         )
 
         assert self._error_of(result) == (
@@ -166,7 +168,7 @@ class TestInfobimProjectUpdateCommand:
         self, cli_runner: InfobimCliProcessRunner
     ) -> None:
         result: CliInvocationResult = cli_runner.run(
-            "project", "--update", "--from", "title=A,title=B"
+            "project", "--update", "title=A,title=B"
         )
 
         assert self._error_of(result) == "Duplicate container update key: title"
@@ -194,7 +196,7 @@ class TestInfobimProjectUpdateCommand:
         arguments: List[str] = ["project"]
         if selector == "id":
             arguments.extend(["--global-id", workspace.identifier])
-        arguments.extend(["--update", "--from", source])
+        arguments.extend(["--update", source])
         user_file: Path = workspace.project / "notes.txt"
         user_file.write_text("preserve me", encoding="utf-8")
 
@@ -210,7 +212,7 @@ class TestInfobimProjectUpdateCommand:
             workspace.project / ".__ontobdc__" / "container.ttl", format="turtle"
         )
         assert title in {str(value) for value in graph.objects(None, DCTERMS.title)}
-        assert description in {str(value) for value in graph.objects(None, DCTERMS.description)}
+        assert description in {str(value) for value in graph.objects(None, CT.description)}
         listing: CliInvocationResult = InfobimCliProcessRunner(tmp_path).run(
             "project", "--list"
         )

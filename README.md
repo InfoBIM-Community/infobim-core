@@ -61,6 +61,7 @@ cp ~/Downloads/estrutura.ifc ~/Downloads/planta.dxf .
 infobim project --refresh                 # registers the new files in the project
 
 infobim project --inspect                 # what the project holds, from its IfcProject down
+infobim project --entity                  # the entities the project holds, by dataset
 infobim project --health                  # every check the project must pass
 infobim project --list                    # (from anywhere under the root) every project
 ```
@@ -153,7 +154,7 @@ The result is the same on every machine.
 | The same, in an interactive tree (Textual) | `infobim project --inspect --interactive` |
 | Check a project's health | `infobim project --health` |
 | Register a project's files after they change | `infobim project --refresh` |
-| Write metadata from a source | `infobim project --from <file.csv \| file.json \| key=value,…>` |
+| Write metadata from a source | `infobim project --update <file.csv \| file.json \| key=value,…>` |
 | Create a dataset inside a project | `infobim project --create-dataset "<title>"` |
 | Register a project copied from elsewhere | `infobim project --project-path <path> --attach` |
 | Unregister a project (its files stay) | `infobim project --delete <GlobalId>` |

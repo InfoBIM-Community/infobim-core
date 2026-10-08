@@ -52,6 +52,7 @@ class ProjectAttachCommand(CliCommandPort):
                     "container to attach. When omitted, use the current "
                     "working directory as the project target."
                 ),
+                "type": "Path",
             },
             {
                 "accepts": ["--attach"],
@@ -63,6 +64,7 @@ class ProjectAttachCommand(CliCommandPort):
                     "holds."
                 ),
                 "valued": True,
+                "type": "bool",
             },
         ],
     )

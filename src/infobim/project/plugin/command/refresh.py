@@ -66,6 +66,7 @@ class ProjectRefreshCommand(CliCommandPort, LoggerAwarePort):
                     "storage identifier. When omitted, resolve the "
                     "project from the current working directory."
                 ),
+                "type": "str",
             },
             {
                 "accepts": [
@@ -77,7 +78,7 @@ class ProjectRefreshCommand(CliCommandPort, LoggerAwarePort):
                     "InfoBIM project. Refreshing rebuilds datasets, "
                     "datapackage and RO-Crate from the files the project "
                     "container actually holds; it never writes values "
-                    "into metadata fields (use `project update --from` "
+                    "into metadata fields (use `project --update <source>` "
                     "instead)."
                 ),
             },
