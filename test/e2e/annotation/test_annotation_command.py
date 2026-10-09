@@ -30,6 +30,7 @@ COLUMNS = [
     "source_document",
     "author",
     "created_at",
+    "related_documents",
 ]
 
 
@@ -92,7 +93,7 @@ def test_command_creates_complete_annotation_csv_dataset_links_and_etl(
     assert len(links) == 1
     target = graph.value(links[0], ICDD_LINKSET.hasToLinkElement)
     assert graph.value(target, ICDD_LINKSET.hasDocument) == URIRef(expected)
-    etl = tmp_path / ".__ontobdc__/etl/annotation/creation/point"
+    etl = directory / ".__ontobdc__/etl/annotation/creation/point"
     events = list(etl.glob("*.json"))
     assert len(events) == 7
     assert len(list(etl.iterdir())) == 8
