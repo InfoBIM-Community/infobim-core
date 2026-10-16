@@ -1,0 +1,148 @@
+statechart:
+  name: StandardInfoBIMProjectRemote
+  description: "Statechart for connecting to a remote InfoBIM project over an OntoBDC container."
+
+  root state:
+    name: standard_project_remote
+    initial: undefined
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state before the remote container file is downloaded."
+          pt-br: "Estado inicial antes de o arquivo do container remoto ser baixado."
+        transitions:
+          - target: remote_file_available
+            guard: handler.can_transit_to(to_state = ProjectRemoteProcessStatePort.REMOTE_FILE_AVAILABLE)
+            action: handler.perform_state_transition(to_state = ProjectRemoteProcessStatePort.REMOTE_FILE_AVAILABLE)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRemoteProcessStatePort.UNDEFINED, to_state = ProjectRemoteProcessStatePort.REMOTE_FILE_AVAILABLE)
+
+      - name: remote_file_available
+        label:
+          en: "Remote File Available"
+          pt-br: "Arquivo Remoto Disponível"
+        description:
+          en: "The remote container file was downloaded and is available on disk."
+          pt-br: "O arquivo do container remoto foi baixado e está disponível em disco."
+        transitions:
+          - target: remote_container_reachable
+            guard: handler.can_transit_to(to_state = ProjectRemoteProcessStatePort.REMOTE_CONTAINER_REACHABLE)
+            action: handler.perform_state_transition(to_state = ProjectRemoteProcessStatePort.REMOTE_CONTAINER_REACHABLE)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRemoteProcessStatePort.REMOTE_FILE_AVAILABLE, to_state = ProjectRemoteProcessStatePort.REMOTE_CONTAINER_REACHABLE)
+
+      - name: remote_container_reachable
+        label:
+          en: "Remote Container Reachable"
+          pt-br: "Container Remoto Alcançável"
+        description:
+          en: "The downloaded file was read and the information of the remote container is available."
+          pt-br: "O arquivo baixado foi lido e as informações do container remoto estão disponíveis."
+        transitions:
+          - target: storage_root_recovered
+            guard: handler.can_transit_to(to_state = ProjectRemoteProcessStatePort.STORAGE_ROOT_RECOVERED)
+            action: handler.perform_state_transition(to_state = ProjectRemoteProcessStatePort.STORAGE_ROOT_RECOVERED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRemoteProcessStatePort.REMOTE_CONTAINER_REACHABLE, to_state = ProjectRemoteProcessStatePort.STORAGE_ROOT_RECOVERED)
+          - target: temp_storage_root_initialized
+            guard: handler.can_transit_to(to_state = ProjectRemoteProcessStatePort.TEMP_STORAGE_ROOT_INITIALIZED)
+            action: handler.perform_state_transition(to_state = ProjectRemoteProcessStatePort.TEMP_STORAGE_ROOT_INITIALIZED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRemoteProcessStatePort.REMOTE_CONTAINER_REACHABLE, to_state = ProjectRemoteProcessStatePort.TEMP_STORAGE_ROOT_INITIALIZED)
+
+      - name: storage_root_recovered
+        label:
+          en: "Storage Root Recovered"
+          pt-br: "Raiz de Storage Recuperada"
+        description:
+          en: "The storage root the execution runs under was recovered."
+          pt-br: "A raiz de storage sob a qual a execução roda foi recuperada."
+        transitions:
+          - target: container_created
+            guard: handler.can_transit_to(to_state = ProjectRemoteProcessStatePort.CONTAINER_CREATED)
+            action: handler.perform_state_transition(to_state = ProjectRemoteProcessStatePort.CONTAINER_CREATED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRemoteProcessStatePort.STORAGE_ROOT_RECOVERED, to_state = ProjectRemoteProcessStatePort.CONTAINER_CREATED)
+
+      - name: container_created
+        label:
+          en: "Container Created"
+          pt-br: "Container Criado"
+        description:
+          en: "The local container that holds the downloaded remote file was created."
+          pt-br: "O container local que guarda o arquivo remoto baixado foi criado."
+        transitions:
+          - target: container_files_downloaded
+            guard: handler.can_transit_to(to_state = ProjectRemoteProcessStatePort.CONTAINER_FILES_DOWNLOADED)
+            action: handler.perform_state_transition(to_state = ProjectRemoteProcessStatePort.CONTAINER_FILES_DOWNLOADED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRemoteProcessStatePort.CONTAINER_CREATED, to_state = ProjectRemoteProcessStatePort.CONTAINER_FILES_DOWNLOADED)
+
+      - name: container_files_downloaded
+        label:
+          en: "Container Files Downloaded"
+          pt-br: "Arquivos do Container Baixados"
+        description:
+          en: "Every file of the remote container was downloaded into the local container."
+          pt-br: "Todos os arquivos do container remoto foram baixados para o container local."
+        transitions:
+          - target: container_refreshed
+            guard: handler.can_transit_to(to_state = ProjectRemoteProcessStatePort.CONTAINER_REFRESHED)
+            action: handler.perform_state_transition(to_state = ProjectRemoteProcessStatePort.CONTAINER_REFRESHED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRemoteProcessStatePort.CONTAINER_FILES_DOWNLOADED, to_state = ProjectRemoteProcessStatePort.CONTAINER_REFRESHED)
+
+      - name: container_refreshed
+        label:
+          en: "Container Refreshed"
+          pt-br: "Container Atualizado"
+        description:
+          en: "The local container was cleaned, and its Data Package and RO-Crate metadata were updated."
+          pt-br: "O container local foi limpo, e seus metadados Data Package e RO-Crate foram atualizados."
+        transitions:
+          - target: project_set
+            guard: handler.can_transit_to(to_state = ProjectRemoteProcessStatePort.PROJECT_SET)
+            action: handler.perform_state_transition(to_state = ProjectRemoteProcessStatePort.PROJECT_SET)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRemoteProcessStatePort.CONTAINER_REFRESHED, to_state = ProjectRemoteProcessStatePort.PROJECT_SET)
+
+      - name: project_set
+        label:
+          en: "Project Set"
+          pt-br: "Projeto Definido"
+        description:
+          en: "The reserved InfoBIM dataset is in place and its IfcProject is the one the remote publishes."
+          pt-br: "O dataset reservado do InfoBIM está em vigor e seu IfcProject é o que o remoto publica."
+        transitions:
+          - target: project_refreshed
+            guard: handler.can_transit_to(to_state = ProjectRemoteProcessStatePort.PROJECT_REFRESHED)
+            action: handler.perform_state_transition(to_state = ProjectRemoteProcessStatePort.PROJECT_REFRESHED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRemoteProcessStatePort.PROJECT_SET, to_state = ProjectRemoteProcessStatePort.PROJECT_REFRESHED)
+
+      - name: project_refreshed
+        label:
+          en: "Project Refreshed"
+          pt-br: "Projeto Atualizado"
+        description:
+          en: "The InfoBIM-specific parts of the project were refreshed on top of the refreshed container."
+          pt-br: "As partes especificas do InfoBIM no projeto foram atualizadas sobre o container atualizado."
+        type: final
+
+      - name: temp_storage_root_initialized
+        label:
+          en: "Temp Storage Root Initialized"
+          pt-br: "Raiz de Storage Temporária Inicializada"
+        description:
+          en: "No storage root was found, so a temporary one was initialized instead."
+          pt-br: "Nenhuma raiz de storage foi encontrada, então uma temporária foi inicializada."
+        transitions:
+          - target: storage_root_recovered
+            guard: handler.can_transit_to(to_state = ProjectRemoteProcessStatePort.STORAGE_ROOT_RECOVERED)
+            action: handler.perform_state_transition(to_state = ProjectRemoteProcessStatePort.STORAGE_ROOT_RECOVERED)
+            contract:
+              - after: handler.validate_state_transition(from_state = ProjectRemoteProcessStatePort.TEMP_STORAGE_ROOT_INITIALIZED, to_state = ProjectRemoteProcessStatePort.STORAGE_ROOT_RECOVERED)

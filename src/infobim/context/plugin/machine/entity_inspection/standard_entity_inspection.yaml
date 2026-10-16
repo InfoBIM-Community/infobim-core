@@ -1,0 +1,28 @@
+statechart:
+  name: InfoBIMEntityInspection
+  description: "Find the information published for an entity, resolving IFC class names."
+  root state:
+    name: entity_inspection
+    initial: undefined
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        transitions:
+          - target: entity_uri_resolved
+            guard: handler.can_transit_to(to_state = EntityInspectionProcessStatePort.ENTITY_URI_RESOLVED)
+            action: handler.perform_state_transition(to_state = EntityInspectionProcessStatePort.ENTITY_URI_RESOLVED)
+      - name: entity_uri_resolved
+        label:
+          en: "Entity URI Resolved"
+          pt-br: "URI da Entidade Resolvida"
+        transitions:
+          - target: entity_information_found
+            guard: handler.can_transit_to(to_state = EntityInspectionProcessStatePort.ENTITY_INFORMATION_FOUND)
+            action: handler.perform_state_transition(to_state = EntityInspectionProcessStatePort.ENTITY_INFORMATION_FOUND)
+      - name: entity_information_found
+        type: final
+        label:
+          en: "Entity Information Found"
+          pt-br: "Informações da Entidade Encontradas"

@@ -5,7 +5,7 @@ from ontobdc.cli.domain.model.command import CliCommandMetadata
 from ontobdc.cli.domain.response.command import RunCommandResponse
 from ontobdc.run.plugin.command import fsm as ontobdc_fsm
 
-from infobim.annotation.adapter.csv_repository import AnnotationCsvRepository
+from infobim.annotate.adapter.csv_repository import AnnotationCsvRepository
 from infobim.project.adapter.proxy import ContainerCommandProxy
 
 

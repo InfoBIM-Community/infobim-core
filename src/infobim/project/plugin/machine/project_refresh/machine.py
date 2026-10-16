@@ -1,4 +1,4 @@
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
+from typing import Any, ClassVar, List, Optional, Tuple, Type
 from pathlib import Path
 
 import yaml
@@ -98,20 +98,9 @@ class ProjectRefreshStateTransitionHandler(ProjectRefreshStateTransitionHandlerP
     project-dataset refresh step or the IfcProject refresh step.
     """
 
-    _CAPABILITY_IDS: ClassVar[Dict[ProjectRefreshProcessStatePort, str]] = {
-        ProjectRefreshProcessState.PROJECT_DATASET_REFRESHED: (
-            "org.infobim.project.plugin.capability.transformation."
-            "target.project_dataset_refreshed"
-        ),
-        ProjectRefreshProcessState.IFC_PROJECT_REFRESHED: (
-            "org.infobim.project.plugin.capability.transformation."
-            "target.ifc_project_refreshed"
-        ),
-        ProjectRefreshProcessState.PROJECT_READY_TO_RENDER: (
-            "org.infobim.project.plugin.capability.transformation."
-            "target.project_ready_to_render"
-        ),
-    }
+    CAPABILITY_ID_PREFIX: ClassVar[str] = (
+        "org.infobim.project.plugin.capability.transformation.target."
+    )
     CAPABILITY_ROOT_PACKAGES: ClassVar[Tuple[str, ...]] = ("infobim",)
 
     STATECHART_PACKAGE: ClassVar[str] = (
@@ -165,13 +154,7 @@ class ProjectRefreshStateTransitionHandler(ProjectRefreshStateTransitionHandlerP
             f"InfoBIM project post-container refresh transition: "
             f"{self.current_state.value} -> {to_state.value}",
         )
-        capability_id: Optional[str] = self._CAPABILITY_IDS.get(to_state)
-        if capability_id is None:
-            raise ValueError(
-                f"InfoBIM project post-container refresh capability id "
-                f"not declared for state: {to_state.value}"
-            )
-
+        capability_id: str = f"{self.CAPABILITY_ID_PREFIX}{to_state.value.strip('_')}"
         capability_type: Optional[Type[CapabilityPort]] = CapabilityLoader(
             root_packages=self.CAPABILITY_ROOT_PACKAGES
         ).get(capability_id)

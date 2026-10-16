@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
+from typing import Any, ClassVar, List, Optional, Tuple, Type
 
 from ontobdc.cli.adapter.logger import NullLogRepository
 from ontobdc.shared.adapter.loader import CapabilityLoader, ResolverLoader
@@ -111,32 +111,10 @@ class ProjectCreateStateTransitionHandler:
     creation, org.infobim.project for the ones specific to a project).
     """
 
-    _CAPABILITY_IDS: ClassVar[Dict[ProjectCreateProcessStatePort, str]] = {
-        ProjectCreateProcessState.DIRECTORY_READY: (
-            "org.ontobdc.container.plugin.capability.transformation."
-            "target.directory_ready"
-        ),
-        ProjectCreateProcessState.CONTAINER_METADATA_READY: (
-            "org.ontobdc.container.plugin.capability.transformation."
-            "target.container_metadata_ready"
-        ),
-        ProjectCreateProcessState.CONTAINER_STORAGE_INDEX_READY: (
-            "org.ontobdc.container.plugin.capability.transformation."
-            "target.container_storage_index_ready"
-        ),
-        ProjectCreateProcessState.CONTAINER_MANIFEST_SYNCED: (
-            "org.ontobdc.container.plugin.capability.transformation."
-            "target.container_manifest_synced"
-        ),
-        ProjectCreateProcessState.PROJECT_DATASET_READY: (
-            "org.infobim.project.plugin.capability.transformation."
-            "target.project_dataset_ready"
-        ),
-        ProjectCreateProcessState.IFC_PROJECT_READY: (
-            "org.infobim.project.plugin.capability.transformation."
-            "target.ifc_project_ready"
-        ),
-    }
+    CAPABILITY_ID_PREFIXES: ClassVar[Tuple[str, ...]] = (
+        "org.ontobdc.container.plugin.capability.transformation.target.",
+        "org.infobim.project.plugin.capability.transformation.target.",
+    )
     CAPABILITY_ROOT_PACKAGES: ClassVar[Tuple[str, ...]] = ("ontobdc", "infobim")
 
     STATECHART_PACKAGE: ClassVar[str] = "infobim.project.plugin.machine.project_create"
@@ -200,20 +178,20 @@ class ProjectCreateStateTransitionHandler:
             f"InfoBIM project create transition: "
             f"{self.current_state.value} -> {to_state.value}",
         )
-        capability_id: Optional[str] = self._CAPABILITY_IDS.get(to_state)
-        if capability_id is None:
-            raise ValueError(
-                f"InfoBIM project create capability id not declared for "
-                f"state: {to_state.value}"
-            )
-
-        capability_type: Optional[Type[CapabilityPort]] = CapabilityLoader(
+        state_name: str = to_state.value.strip("_")
+        capability_loader: CapabilityLoader = CapabilityLoader(
             root_packages=self.CAPABILITY_ROOT_PACKAGES
-        ).get(capability_id)
+        )
+        capability_type: Optional[Type[CapabilityPort]] = None
+        for prefix in self.CAPABILITY_ID_PREFIXES:
+            capability_type = capability_loader.get(f"{prefix}{state_name}")
+            if capability_type is not None:
+                break
+
         if capability_type is None:
             raise ValueError(
                 f"InfoBIM project create capability not found for state: "
-                f"{to_state.value} (id: {capability_id})"
+                f"{to_state.value}"
             )
 
         capability: CapabilityPort = capability_type()

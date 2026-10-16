@@ -33,6 +33,7 @@ def main(
     if check_dataset_metadata_ready(
         dataset_path=str(dataset_path),
         root_path=str(resolved_root_path),
+        entity_iri=ProjectContract.IFC_PROJECT_CLASS,
     ) != 0:
         return 1
 

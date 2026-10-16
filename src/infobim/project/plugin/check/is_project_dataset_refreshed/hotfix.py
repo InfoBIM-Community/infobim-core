@@ -37,6 +37,7 @@ def main(
     if create_dataset_metadata(
         dataset_path=str(dataset_path),
         root_path=str(resolved_root_path),
+        entity_iri=ProjectContract.IFC_PROJECT_CLASS,
     ) != 0:
         return 1
 

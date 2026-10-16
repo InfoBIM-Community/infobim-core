@@ -30,18 +30,9 @@ class IfcModelCreateStateEvaluatorAdapter(IfcModelCreateStateEvaluatorPort):
     machine reach its final state without doing anything.
     """
 
-    STATE_TO_CAPABILITY_IDS: ClassVar[
-        Dict[IfcModelCreateProcessStatePort, Tuple[str, ...]]
-    ] = {
-        IfcModelCreateProcessState.IFC_MODEL_FILE_CREATED: (
-            "org.infobim.ifc.plugin.capability.transformation.target."
-            "ifc_model_file_created",
-        ),
-        IfcModelCreateProcessState.IFC_MODEL_DECLARED: (
-            "org.infobim.ifc.plugin.capability.transformation.target."
-            "ifc_model_declared",
-        ),
-    }
+    CAPABILITY_ID_PREFIX: ClassVar[str] = (
+        "org.infobim.ifc.plugin.capability.transformation.target."
+    )
     INFOBIM_ROOT_PACKAGES: ClassVar[Tuple[str, ...]] = ("infobim",)
     STATECHART_PACKAGE: ClassVar[str] = "infobim.ifc.plugin.machine.ifc_model_create"
     STATECHART_FILE: ClassVar[str] = "standard_ifc_model_create.yaml"
@@ -77,14 +68,11 @@ class IfcModelCreateStateEvaluatorAdapter(IfcModelCreateStateEvaluatorPort):
         self,
         state: IfcModelCreateProcessStatePort,
     ) -> List[CapabilityPort]:
-        if state not in self.STATE_TO_CAPABILITY_IDS:
-            raise ValueError(
-                f"IFC model creation capability ids not declared for state: "
-                f"{state.value}"
-            )
         return [
-            self._capability(state, capability_id)
-            for capability_id in self.STATE_TO_CAPABILITY_IDS[state]
+            self._capability(
+                state,
+                f"{self.CAPABILITY_ID_PREFIX}{state.value.strip('_')}",
+            )
         ]
 
     def _capability(

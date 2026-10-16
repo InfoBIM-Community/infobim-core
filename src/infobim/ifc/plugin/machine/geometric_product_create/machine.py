@@ -1,6 +1,6 @@
 import math
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
+from typing import Any, ClassVar, List, Optional, Tuple, Type
 
 import yaml
 
@@ -313,8 +313,8 @@ class GeometricProductCreateStateTransitionHandler(
     """
     Drives one geometric product through its own machine.
 
-    Each transition is one capability, resolved by the id the state
-    declares and executed through the capability executor. The handler
+    Each transition is one capability, resolved by an id that is the prefix
+    plus the name of the state and executed through the capability executor. The handler
     sequences them and nothing else: no capability here reaches for
     another, and no IFC decision is taken outside the capability that owns
     the state it brings about.
@@ -345,40 +345,9 @@ class GeometricProductCreateStateTransitionHandler(
     STATECHART_FILE: ClassVar[str] = "standard_geometric_product_create.yaml"
     STATE_CONTEXT_NAME: ClassVar[str] = "GeometricProductCreateProcessStatePort"
 
-    CAPABILITY_IDS: ClassVar[Dict[GeometricProductCreateProcessStatePort, str]] = {
-        GeometricProductCreateProcessState.IFC_MODEL_HEALTHY: (
-            "org.infobim.ifc.plugin.capability.transformation.target."
-            "ifc_model_healthy"
-        ),
-        GeometricProductCreateProcessState.UNIT_DEFINED: (
-            "org.infobim.ifc.plugin.capability.transformation.target."
-            "unit_defined"
-        ),
-        GeometricProductCreateProcessState.POSITION_DEFINED: (
-            "org.infobim.ifc.plugin.capability.transformation.target."
-            "position_defined"
-        ),
-        GeometricProductCreateProcessState.GEOMETRY_DEFINED: (
-            "org.infobim.ifc.plugin.capability.transformation.target."
-            "geometry_defined"
-        ),
-        GeometricProductCreateProcessState.GEOMETRY_CREATED: (
-            "org.infobim.ifc.plugin.capability.transformation.target."
-            "geometry_created"
-        ),
-        GeometricProductCreateProcessState.SHAPE_REPRESENTATION_CREATED: (
-            "org.infobim.ifc.plugin.capability.transformation.target."
-            "shape_representation_created"
-        ),
-        GeometricProductCreateProcessState.GEOMETRIC_PRODUCT_CREATED: (
-            "org.infobim.ifc.plugin.capability.transformation.target."
-            "geometric_product_created"
-        ),
-        GeometricProductCreateProcessState.GEOMETRIC_PRODUCT_FEDERATED: (
-            "org.infobim.ifc.plugin.capability.transformation.target."
-            "geometric_product_federated"
-        ),
-    }
+    CAPABILITY_ID_PREFIX: ClassVar[str] = (
+        "org.infobim.ifc.plugin.capability.transformation.target."
+    )
 
     def __init__(
         self,
@@ -432,12 +401,7 @@ class GeometricProductCreateStateTransitionHandler(
             f"IFC geometric product create transition: "
             f"{self.current_state.value} -> {to_state.value}",
         )
-        capability_id: Optional[str] = self.CAPABILITY_IDS.get(to_state)
-        if capability_id is None:
-            raise ValueError(
-                f"IFC geometric product create capability id not declared "
-                f"for state: {to_state.value}"
-            )
+        capability_id: str = f"{self.CAPABILITY_ID_PREFIX}{to_state.value.strip('_')}"
 
         capability_type: Optional[Type[CapabilityPort]] = CapabilityLoader(
             root_packages=self.CAPABILITY_ROOT_PACKAGES
