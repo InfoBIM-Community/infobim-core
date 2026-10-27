@@ -1,9 +1,13 @@
-from typing import ClassVar, List, Type
+from pathlib import Path
+from typing import Any, ClassVar, Dict, List, Optional, Type
 
 from ontobdc.cli.domain.port.command import CliCommandPort
 from ontobdc.cli.domain.model.command import CliCommandMetadata
+from ontobdc.cli.domain.response.command import CommandResponse
 from ontobdc.container.plugin.command import entity_update as ontobdc_entity_update
+from ontobdc.shared.adapter.parameter import RequiredParameter
 
+from infobim.ifc.adapter.element import IfcElementEntity
 from infobim.project.adapter.entity_proxy import EntityRepositoryProxy
 
 
@@ -14,7 +18,8 @@ class ProjectEntityUpdateCommand(EntityRepositoryProxy):
     The command is OntoBDC's own container entity update. What InfoBIM adds
     is the project selector (``--global-id``, or the current directory),
     the check that the container is a project, and the CSV repository that
-    keeps the entities of a project.
+    keeps the entities of a project. An entity no dataset keeps may be an
+    element of an IFC model of the project, which is changed in the model.
     """
 
     METADATA: CliCommandMetadata = CliCommandMetadata(
@@ -54,3 +59,28 @@ class ProjectEntityUpdateCommand(EntityRepositoryProxy):
         return ProjectEntityUpdateCommand.accepts_as_target(
             ProjectEntityUpdateCommand.TARGET, args
         )
+
+    def run(self) -> CommandResponse:
+        """
+        Change the entity in the datasets of the project, or else the element of its IFC models.
+        """
+        try:
+            return super().run()
+        except LookupError as not_kept:
+            context: Any = self._request.context
+            project_path: Path = Path(
+                RequiredParameter.of(context, self.TARGET.CONTAINER_KEY)
+            ).expanduser().resolve()
+            global_id: str = RequiredParameter.of(context, self.TARGET.ENTITY_KEY)
+            changes: Dict[str, Any] = self.TARGET.parse(
+                RequiredParameter.of(context, self.TARGET.SOURCE_KEY)
+            )
+            changed: Optional[List[str]] = IfcElementEntity.update(project_path, global_id, changes)
+            if changed is None:
+                raise IfcElementEntity.absent(project_path, global_id, not_kept)
+
+            return CommandResponse(
+                title="Entity Updated",
+                description=f"Changed {', '.join(changed) or 'nothing'} of the IFC element {global_id}.",
+                content={"global_id": global_id, "changed": changed},
+            )

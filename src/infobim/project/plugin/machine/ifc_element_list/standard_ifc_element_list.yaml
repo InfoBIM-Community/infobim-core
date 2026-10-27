@@ -1,0 +1,50 @@
+statechart:
+  name: StandardInfoBIMIfcElementList
+  label:
+    en: "InfoBIM IFC Element List"
+    pt-br: "Listagem de Elementos IFC do InfoBIM"
+  description:
+    en: "Statechart for listing the instances of IfcElement of a project, which no dataset keeps: they are read from the IFC models the project holds."
+    pt-br: "Statechart para listar as instâncias de IfcElement de um projeto, que nenhum dataset guarda: elas são lidas dos modelos IFC que o projeto contém."
+
+  root state:
+    name: standard_ifc_element_list
+    initial: undefined
+
+    states:
+      - name: undefined
+        label:
+          en: "Undefined"
+          pt-br: "Indefinido"
+        description:
+          en: "Initial state before the IFC models of the project are looked for."
+          pt-br: "Estado inicial antes de os modelos IFC do projeto serem procurados."
+        transitions:
+          - target: ifc_models_found
+            guard: handler.can_transit_to(to_state = IfcElementListProcessStatePort.IFC_MODELS_FOUND)
+            action: handler.perform_state_transition(to_state = IfcElementListProcessStatePort.IFC_MODELS_FOUND)
+            contract:
+              - after: handler.validate_state_transition(from_state = IfcElementListProcessStatePort.UNDEFINED, to_state = IfcElementListProcessStatePort.IFC_MODELS_FOUND)
+
+      - name: ifc_models_found
+        label:
+          en: "IFC Models Found"
+          pt-br: "Modelos IFC Encontrados"
+        description:
+          en: "The IFC models the RO-Crate of the project declares are known."
+          pt-br: "Os modelos IFC que o RO-Crate do projeto declara são conhecidos."
+        transitions:
+          - target: ifc_elements_read
+            guard: handler.can_transit_to(to_state = IfcElementListProcessStatePort.IFC_ELEMENTS_READ)
+            action: handler.perform_state_transition(to_state = IfcElementListProcessStatePort.IFC_ELEMENTS_READ)
+            contract:
+              - after: handler.validate_state_transition(from_state = IfcElementListProcessStatePort.IFC_MODELS_FOUND, to_state = IfcElementListProcessStatePort.IFC_ELEMENTS_READ)
+
+      - name: ifc_elements_read
+        label:
+          en: "IFC Elements Read"
+          pt-br: "Elementos IFC Lidos"
+        description:
+          en: "Every IfcElement of the models was read."
+          pt-br: "Todo IfcElement dos modelos foi lido."
+        type: final

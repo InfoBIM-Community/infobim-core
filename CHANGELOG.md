@@ -2,13 +2,26 @@
 
 - Packaged the InfoBIM PNG icon, SVG brand mark and SVG logotype inside the Python distribution. Surface generation now resolves and embeds these installed resources locally, so branding works from a wheel without the source repository or network access.
 
-## Unreleased
+## v0.14.0
 
 ### Fixed
 
+- The IFC models a project declares were read from its RO-Crate as if the `@id` of each part were the path of the file. A crate that names a file by an identifier, with the path in the `relativePath` of its `fileHistory`, which is what OntoBDC writes, declared no IFC model: `infobim ifc --health` said the crate did not declare the model, and an IFC element was found in none, so commenting on it, tagging it or saving it failed with "No entity the container keeps has the global id". The three places that read the crate now ask the crate reader of OntoBDC, which knows both ways of naming a file.
 - A geometry responsibility answered by the measurements it was handed rather than by which primitive they measure, so a cylinder — measured by a radius, as a sphere is — was created as whichever of the two the chain reached first: `infobim ifc --create <title> --radius <r> --height <h> …` produced an `IfcSphere`. The kind now travels with the measurements and each responsibility answers for its own.
 
 ### Added
+
+- `infobim comment`, the project name of OntoBDC's comment commands: `--guid <id> --create|--list`, `--update <comment>` and `--delete <comment>`, with `--global-id` as the project selector. The entity may be an IFC element, which no dataset keeps: its thread is kept in the reserved dataset of the project, `payload/triple/comment_<GlobalId>.ttl`, where `--update` and `--delete` find it as they find any other.
+
+- What the container says about an IFC element that the IFC model does not: its related documents and its tags (`related_documents` and `tags`, read and changed by `infobim ifc --guid <GlobalId> --inspect|--update` and by `infobim project --entity <id> --inspect|--update`). They are not kept in the IFC model but in the reserved dataset of the project, in `payload/triple/<ifc_class>.ttl` — `IfcWall` in `ifc_wall.ttl` — as the subject `urn:infobim:ifcwall/<GlobalId>`, typed with its class in the ifcOWL namespace of the schema of its model, with its GlobalId, the documents as `dcterms:relation` and the tags as `schema:keywords`. An element with none is not in the file, and a file with no element is removed.
+
+- `infobim ifc --guid <GlobalId> --update <source> [--global-id <project>] [--ifc-model-path <model.ifc>]` changes the fields of one IFC element and writes the IFC model back to its file. The values come from `--update` as they do for an entity of a container (a JSON object, `key=value` assignments, or a `.json`/`.csv` file), and the fields that can be changed are the ones the facade of `IfcElement` declares editable: the name, the description and the tag. An empty value clears the attribute. `infobim project --entity <id> --update <source>` hands an id no dataset keeps to it, the way `--inspect` does. Saving rewrites the whole IFC file through `ifcopenshell`, so its text can differ from what the file had before, beyond the field changed.
+
+- `infobim project --entity <id> --inspect`, the project name of OntoBDC's `container --entity <id> --inspect`. The entities of the datasets are OntoBDC's to answer; an id no dataset keeps may be an element of an IFC model of the project, which InfoBIM answers the way `infobim ifc --guid <id> --inspect` does.
+
+- `infobim ifc --guid <GlobalId> --inspect [--global-id <project>]` inspects one IFC element of a project: the models its RO-Crate declares are searched for the `IfcElement` with that GlobalId, and the answer has the shape of the container entity listing, with the model that holds the element as the one dataset and the element as the one entity. `--ifc-model-path <model.ifc>` names the model that holds the element, which need not be one the RO-Crate declares; without it the declared models are searched. It needs `ifcopenshell`. The listing of `IfcElement` (`project --entity IfcElement --list`) answers its elements in the same shape.
+
+- `infobim project --entity <type> --list` and `infobim project --entity <type> --tree`, the project names of OntoBDC's own entity listing and tree. `IfcElement` is the one type no dataset keeps, so listing it runs a machine of InfoBIM's own — it finds the IFC models the RO-Crate declares and reads their `IfcElement` instances (it needs `ifcopenshell`) — and answers in the shape of the container listing; any other type is handed to OntoBDC unchanged.
 
 - `infobim dict --create <title> --uri <entry> [--global-id <GlobalId>] [--x --y --z]` defines an element of the project from a dictionary entry. It is the sibling of `infobim ifc --create`, and the difference is what decides what the element is: neither geometry nor IFC class is resolved from the invocation — the dictionary the URI names is what states them, and the command goes there, brings the entry back and reads it. `--global-id` is this executable's Project selector here as everywhere else, and the element being defined is identified by the machine, from the Project and the title, by the same rule the IFC creation flow derives a product's identity by.
 

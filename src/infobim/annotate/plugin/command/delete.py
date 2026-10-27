@@ -9,11 +9,11 @@ from infobim.annotate.adapter.csv_repository import AnnotationCsvRepository
 from infobim.project.adapter.proxy import ContainerCommandProxy
 
 
-class InfoBimAnnotationDeleteCommand(ContainerCommandProxy):
+class InfoBimAnnotationDeleteGeometryCommand(ContainerCommandProxy):
     """
-    Remove an annotation of an InfoBIM project.
+    Take a geometry off an annotation of an InfoBIM project.
 
-    The command is OntoBDC's own annotation delete. What InfoBIM adds is
+    The command is OntoBDC's own annotation delete of a geometry. What InfoBIM adds is
     the project selector (``--global-id``, or the current directory), the
     check that the container is a project, and the CSV repository that keeps
     the annotations of a project, handed to the command through the context
@@ -21,9 +21,9 @@ class InfoBimAnnotationDeleteCommand(ContainerCommandProxy):
     """
 
     METADATA: CliCommandMetadata = CliCommandMetadata(
-        id="annotate_delete",
+        id="annotate_delete_geometry",
         logical_component="annotate",
-        description="Remove an annotation of an InfoBIM project.",
+        description="Take a geometry off an annotation of an InfoBIM project.",
         arguments=[
             {
                 "accepts": ["--global-id"],
@@ -38,7 +38,7 @@ class InfoBimAnnotationDeleteCommand(ContainerCommandProxy):
             },
             *[
                 argument
-                for argument in ontobdc_delete.AnnotationDeleteCommand.METADATA.arguments
+                for argument in ontobdc_delete.AnnotationDeleteGeometryCommand.METADATA.arguments
                 if argument["accepts"] != ["--container"]
             ],
         ],
@@ -48,15 +48,15 @@ class InfoBimAnnotationDeleteCommand(ContainerCommandProxy):
     TARGET_COMPONENT: ClassVar[str] = "annotate"
     # Reached through its module: a class imported by name would be found by the
     # command loader as a command of this package, too.
-    TARGET: ClassVar[Type[CliCommandPort]] = ontobdc_delete.AnnotationDeleteCommand
+    TARGET: ClassVar[Type[CliCommandPort]] = ontobdc_delete.AnnotationDeleteGeometryCommand
 
     @staticmethod
     def accepts(args: List[str]) -> bool:
         """
-        Match the annotation delete at the CLI routing stage.
+        Match the annotation delete of a geometry at the CLI routing stage.
         """
-        return InfoBimAnnotationDeleteCommand.accepts_as_target(
-            InfoBimAnnotationDeleteCommand.TARGET, args
+        return InfoBimAnnotationDeleteGeometryCommand.accepts_as_target(
+            InfoBimAnnotationDeleteGeometryCommand.TARGET, args
         )
 
     def run(self) -> CommandResponse:

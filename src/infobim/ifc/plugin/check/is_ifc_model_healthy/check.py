@@ -1,18 +1,10 @@
 """Check declaration, writability and readability in the model's own IFC schema."""
 
 import os
-import json
 from typing import List, Optional, Set
 from pathlib import Path
-from urllib.parse import unquote
 
-from ontobdc.storage.adapter.bootstrap import StorageBootstrap
-
-
-_CRATE_ROOT_NODE_ID: str = "./"
-_CRATE_GRAPH_KEY: str = "@graph"
-_CRATE_NODE_ID_KEY: str = "@id"
-_CRATE_HAS_PART_KEY: str = "hasPart"
+from infobim.ifc.adapter.models import IfcProjectModels
 
 
 def _resolve_path(path_value: Optional[str]) -> Optional[Path]:
@@ -30,58 +22,7 @@ def _project_path(
 
 
 def _crate_file_ids(project_path: Path) -> Optional[Set[str]]:
-    crate_file: Path = StorageBootstrap.get_container_crate_metadata_file_path(
-        project_path,
-    )
-    if not crate_file.is_file():
-        return None
-
-    try:
-        crate_data: object = json.loads(crate_file.read_text(encoding="utf-8"))
-    except Exception:
-        return None
-
-    if not isinstance(crate_data, dict):
-        return None
-
-    graph_data: object = crate_data.get(_CRATE_GRAPH_KEY)
-    if not isinstance(graph_data, list):
-        return None
-
-    for node in graph_data:
-        if not isinstance(node, dict):
-            continue
-        if node.get(_CRATE_NODE_ID_KEY) != _CRATE_ROOT_NODE_ID:
-            continue
-
-        parts: object = node.get(_CRATE_HAS_PART_KEY)
-        if parts is None:
-            return set()
-        if not isinstance(parts, list):
-            return None
-
-        file_ids: Set[str] = set()
-        for part in parts:
-            if not isinstance(part, dict):
-                continue
-
-            part_id: object = part.get(_CRATE_NODE_ID_KEY)
-            if not isinstance(part_id, str) or not part_id.strip():
-                continue
-
-            file_ids.add(_crate_path(part_id))
-
-        return file_ids
-
-    return None
-
-
-def _crate_path(node_id: str) -> str:
-    file_path: str = unquote(node_id.strip())
-    if file_path.startswith(_CRATE_ROOT_NODE_ID):
-        return file_path[len(_CRATE_ROOT_NODE_ID):]
-
-    return file_path
+    return IfcProjectModels.declared_paths(project_path)
 
 
 def _is_declared(project_path: Path, model_path: Path) -> bool:

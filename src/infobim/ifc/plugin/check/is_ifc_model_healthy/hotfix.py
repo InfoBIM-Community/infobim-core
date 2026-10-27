@@ -5,9 +5,11 @@ import json
 from typing import Any, Dict, Optional, Set
 from pathlib import Path
 from datetime import datetime, timezone
-from urllib.parse import quote, unquote
+from urllib.parse import quote
 
 from ontobdc.storage.adapter.bootstrap import StorageBootstrap
+
+from infobim.ifc.adapter.models import IfcProjectModels
 
 
 _CRATE_ROOT_NODE_ID: str = "./"
@@ -66,32 +68,7 @@ def _root_node(crate_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 
 
 def _crate_file_ids(project_path: Path) -> Optional[Set[str]]:
-    crate_data: Optional[Dict[str, Any]] = _load_crate(project_path)
-    if crate_data is None:
-        return None
-
-    root: Optional[Dict[str, Any]] = _root_node(crate_data)
-    if root is None:
-        return None
-
-    parts: Any = root.get(_CRATE_HAS_PART_KEY)
-    if parts is None:
-        return set()
-    if not isinstance(parts, list):
-        return None
-
-    file_ids: Set[str] = set()
-    for part in parts:
-        if not isinstance(part, dict):
-            continue
-
-        part_id: Any = part.get(_CRATE_NODE_ID_KEY)
-        if not isinstance(part_id, str) or not part_id.strip():
-            continue
-
-        file_ids.add(unquote(part_id.strip()))
-
-    return file_ids
+    return IfcProjectModels.declared_paths(project_path)
 
 
 def _is_declared(project_path: Path, model_path: Path) -> bool:
