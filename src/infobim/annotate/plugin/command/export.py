@@ -36,38 +36,13 @@ class InfoBimAnnotationExportCommand(ContainerCommandProxy):
                 ),
                 "type": "str",
             },
-            {
-                "accepts": ["--export"],
-                "valued": True,
-                "parameter": "export_format",
-                "description": "Format of the export. The only one is: excel.",
-                "type": "str",
-                "usage": (
-                    "infobim annotation --export excel --type <type> [--output <file>] "
-                    "[--language <tag>] [--global-id <project-global-id>]"
-                ),
-            },
-            {
-                "accepts": ["--type"],
-                "valued": True,
-                "parameter": "annotation_type",
-                "description": "Annotation type whose annotations are exported.",
-                "type": "str",
-            },
-            {
-                "accepts": ["--output"],
-                "valued": True,
-                "parameter": "export_output_path",
-                "description": "Where to write the file.",
-                "type": "Path",
-            },
-            {
-                "accepts": ["--language"],
-                "valued": True,
-                "parameter": "export_language",
-                "description": "Language of the words in the file (en, pt-br, es-es).",
-                "type": "str",
-            },
+            # The arguments of OntoBDC's own export (the format, the type, which of them, where to write, the language),
+            # which is what reads them; the container is the project, which is selected above.
+            *[
+                argument
+                for argument in ontobdc_export.AnnotationExportCommand.METADATA.arguments
+                if argument["accepts"] != ["--container"]
+            ],
         ],
     )
 

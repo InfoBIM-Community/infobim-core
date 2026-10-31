@@ -2,6 +2,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 
 from brasidatacenter.tool.adapter.class_definition import class_definition
 from brasidatacenter.tool.adapter.entity_info import entity_info
+from brasidatacenter.tool.adapter.kind_search import search
 from ontobdc.cli.domain.model.command import CliCommandMetadata
 from ontobdc.cli.domain.port.command import CliCommandPort
 from ontobdc.cli.domain.request.command import CliCommandRequest
@@ -17,7 +18,10 @@ class ContextEntityDescribeCommand(CliCommandPort):
     The term is resolved to the IRI of an entity (an IFC class name is a class of the IFC4 ontology). When BrasidataCenter
     publishes a facade of the entity, that is the answer (``kind`` is ``facade``); when it does not, and the entity is a
     class of the IFC4 ontology, the answer is the definition of the class (``kind`` is ``definition``): its place in the
-    hierarchy, its attributes and its types. Any other term is a ``LookupError`` that says why.
+    hierarchy, its attributes and its types. A term that names no entity is looked for in what the ontologies call
+    things, in any language, without regard to accents or capitals: the kinds of the taxonomy it names, with the IFC
+    classes they are bound to, and the IFC classes it is part of the name of (``kind`` is ``search``). A term nothing
+    in the ontologies is named by is a ``LookupError`` that says so.
     """
 
     METADATA: CliCommandMetadata = CliCommandMetadata(
@@ -78,23 +82,33 @@ class ContextEntityDescribeCommand(CliCommandPort):
 
     def run(self) -> CommandResponse:
         term: str = str(self._request.context.get_parameter_value(self.ENTITY_CONTEXT_KEY))
-        uri: Optional[str] = EntityUriResolvedCapability.resolve(term)
-        if uri is None:
-            raise LookupError(f"No entity is named {term!r}.")
+        try:
+            uri: Optional[str] = EntityUriResolvedCapability.resolve(term)
+        except LookupError:
+            uri = None
 
-        facade: Optional[Dict[str, Any]] = entity_info(uri)
-        if facade is not None:
+        if uri is not None:
+            facade: Optional[Dict[str, Any]] = entity_info(uri)
+            if facade is not None:
+                return CommandResponse(
+                    title="Entity Described",
+                    description=f"Facade of the entity <{term}>.",
+                    content={"kind": "facade", "facade": facade},
+                )
+            definition: Optional[Dict[str, Any]] = class_definition(uri)
+            if definition is not None:
+                return CommandResponse(
+                    title="Entity Described",
+                    description=f"Definition of the class <{term}> in the IFC4 ontology.",
+                    content={"kind": "definition", "definition": definition},
+                )
+
+        found: Dict[str, Any] = search(term)
+        if found["kinds"] or found["ifc_classes"]:
             return CommandResponse(
-                title="Entity Described",
-                description=f"Facade of the entity <{term}>.",
-                content={"kind": "facade", "facade": facade},
-            )
-        definition: Optional[Dict[str, Any]] = class_definition(uri)
-        if definition is not None:
-            return CommandResponse(
-                title="Entity Described",
-                description=f"Definition of the class <{term}> in the IFC4 ontology.",
-                content={"kind": "definition", "definition": definition},
+                title="Term Found",
+                description=f"What the ontologies call <{term}>.",
+                content={"kind": "search", "term": term, **found},
             )
 
-        raise LookupError(f"No ontology publishes a facade or a definition of the entity <{uri}>.")
+        raise LookupError(f"Nothing in the ontologies is named <{term}>.")
