@@ -43,6 +43,21 @@ class ProjectHealthCommand(ContainerCommandProxy):
                 "type": "str",
             },
             {
+                "accepts": [
+                    "--config",
+                ],
+                "valued": True,
+                "parameter": "config",
+                "description": (
+                    "The config of the application, as text (YAML or "
+                    "JSON). When given, health says as a warning, not as "
+                    "an error, whether the project holds the constraints "
+                    "it declares. When omitted, there is nothing to "
+                    "compare."
+                ),
+                "type": "str",
+            },
+            {
                 "accepts": ["--health"],
                 "description": (
                     "Run the InfoBIM Project health check capability on "
@@ -59,6 +74,11 @@ class ProjectHealthCommand(ContainerCommandProxy):
     HEALTHY_KEY: ClassVar[str] = "healthy"
 
     HEALTHY_DESCRIPTION: ClassVar[str] = "Every verification holds."
+    WARNED_DESCRIPTION: ClassVar[str] = (
+        "Every verification holds, but a warning says something is worth a "
+        "look. Run `infobim project --refresh` to bring the Project back in "
+        "line."
+    )
     UNHEALTHY_DESCRIPTION: ClassVar[str] = (
         "A verification did not hold. Run `infobim project --refresh` to "
         "bring the Project back in line with the files it holds."
@@ -93,14 +113,21 @@ class ProjectHealthCommand(ContainerCommandProxy):
             self._request.context,
         )
         healthy: bool = bool(report.get(self.HEALTHY_KEY))
+        # A verification that did not hold and is only a warning leaves the project healthy, and says so.
+        warned: bool = any(
+            not check.passed and check.warning for check in report.get("checks", [])
+        )
+
+        if not healthy:
+            description, severity = self.UNHEALTHY_DESCRIPTION, "ERROR"
+        elif warned:
+            description, severity = self.WARNED_DESCRIPTION, "WARNING"
+        else:
+            description, severity = self.HEALTHY_DESCRIPTION, "SUCCESS"
 
         return HealthCheckCommandResponse(
             title="Project Health",
-            description=(
-                self.HEALTHY_DESCRIPTION
-                if healthy
-                else self.UNHEALTHY_DESCRIPTION
-            ),
+            description=description,
             content=report,
-            severity="SUCCESS" if healthy else "ERROR",
+            severity=severity,
         )

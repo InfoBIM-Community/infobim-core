@@ -70,6 +70,21 @@ class ProjectRefreshCommand(CliCommandPort, LoggerAwarePort):
             },
             {
                 "accepts": [
+                    "--config",
+                ],
+                "valued": True,
+                "parameter": "config",
+                "description": (
+                    "The config of the application, as text (YAML or "
+                    "JSON), whose constraints the refresh replicates into "
+                    "the config of the project, replacing what it held. "
+                    "When omitted, the config of the project is left as "
+                    "it is."
+                ),
+                "type": "str",
+            },
+            {
+                "accepts": [
                     "--refresh",
                 ],
                 "valued": False,
@@ -94,6 +109,7 @@ class ProjectRefreshCommand(CliCommandPort, LoggerAwarePort):
     TARGET_COMPONENT: ClassVar[str] = "container"
     REFRESH_FLAG: ClassVar[str] = "--refresh"
     SELECTOR_FLAG: ClassVar[str] = "--global-id"
+    CONFIG_FLAG: ClassVar[str] = "--config"
     TARGET_SELECTOR_FLAG: ClassVar[str] = "--container"
 
     @classmethod
@@ -130,6 +146,15 @@ class ProjectRefreshCommand(CliCommandPort, LoggerAwarePort):
                 return False
 
             del remaining[gid_index:gid_index + 2]
+
+        if ProjectRefreshCommand.CONFIG_FLAG in remaining:
+            config_index: int = remaining.index(ProjectRefreshCommand.CONFIG_FLAG)
+            if config_index + 1 >= len(remaining):
+                return False
+            if not bool(str(remaining[config_index + 1]).strip()):
+                return False
+
+            del remaining[config_index:config_index + 2]
 
         return len(remaining) == 0
 
@@ -189,6 +214,19 @@ class ProjectRefreshCommand(CliCommandPort, LoggerAwarePort):
                 )
 
             del rest[gid_index:gid_index + 2]
+
+        if self.CONFIG_FLAG in rest:
+            config_index: int = rest.index(self.CONFIG_FLAG)
+            if config_index + 1 >= len(rest):
+                raise CliCommandArgumentException(
+                    f"The {self.CONFIG_FLAG} flag requires a value."
+                )
+            if not bool(str(rest[config_index + 1]).strip()):
+                raise CliCommandArgumentException(
+                    f"The {self.CONFIG_FLAG} flag value cannot be empty."
+                )
+
+            del rest[config_index:config_index + 2]
 
         if rest:
             raise CliCommandArgumentException(
