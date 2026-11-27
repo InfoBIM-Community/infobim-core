@@ -41,7 +41,9 @@ class IfcElementsReadCapability(TransactionCapability):
     def execute(self, context: CliContextPort) -> Dict[str, Any]:
         try:
             import ifcopenshell
-        except ImportError as error:
+        except ModuleNotFoundError as error:
+            if error.name != "ifcopenshell":
+                raise
             raise RuntimeError("Reading IFC models needs ifcopenshell, which is not installed here.") from error
 
         project_path: Path = Path(str(context.get_parameter_value("container_path"))).expanduser().resolve()
@@ -49,7 +51,7 @@ class IfcElementsReadCapability(TransactionCapability):
         model_path: str
         for model_path in context.get_parameter_value("ifc_model_paths") or []:
             model: Any = ifcopenshell.open(model_path)
-            datasets.append(IfcElementEntity.dataset(project_path, Path(model_path), model, model.by_type("IfcElement")))
+            datasets.append(IfcElementEntity.dataset(project_path, Path(model_path), model, model.by_type("IfcElement"), detailed=False))
         context.set_parameter_value("ifc_element_datasets", datasets)
 
         return {

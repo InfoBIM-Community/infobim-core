@@ -1,9 +1,10 @@
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple
 
 from ontobdc.container.adapter.entity_facade import EntityFacadeLocator
 from ontobdc.container.adapter.entity_rules import EntityFieldRules
 
+from infobim.ifc.adapter.element_attributes import IfcElementAttributes
 from infobim.ifc.adapter.element_triples import IfcElementTriples
 from infobim.project.domain.model.contract import ProjectContract
 
@@ -41,11 +42,13 @@ class IfcElementEntity:
         return cls.ELEMENT_IRIS["IFC4X3" if schema.startswith("IFC4X3") else "IFC4"]
 
     @classmethod
-    def entity(cls, element: Any, stored: Dict[str, List[str]]) -> Dict[str, Any]:
+    def entity(cls, element: Any, stored: Dict[str, List[str]], detailed: bool) -> Dict[str, Any]:
         """
         The element as an entity of the type IfcElement, whatever its class is: the class is the field
         ``ifc_class``, the ones the container keeps for it (``related_documents`` and ``tags``) come from
-        ``stored``, and the others are the ones the facade of IfcElement declares.
+        ``stored``, and the others are the ones the facade of IfcElement declares. A ``detailed`` entity has,
+        after those, the attributes of its class and its property sets (``IfcElementAttributes``): they are
+        read for one element, not for every element of a listing.
         """
         values: Dict[str, str] = {
             field: str(getattr(element, attribute, None) or "")
@@ -60,12 +63,13 @@ class IfcElementEntity:
             "fields": [
                 {"name": field, "editable": False, "values": [value] if value else []}
                 for field, value in values.items()
-            ] + [{"name": field, "editable": False, "values": stored.get(field, [])} for field in IfcElementTriples.FIELDS],
+            ] + [{"name": field, "editable": False, "values": stored.get(field, [])} for field in IfcElementTriples.FIELDS]
+            + (IfcElementAttributes.fields(element) if detailed else []),
         }
 
     @classmethod
-    def dataset(cls, project_path: Path, model_path: Path, model: Any, elements: Any) -> Dict[str, Any]:
-        """The model as the dataset that keeps the given elements."""
+    def dataset(cls, project_path: Path, model_path: Path, model: Any, elements: Any, detailed: bool) -> Dict[str, Any]:
+        """The model as the dataset that keeps the given elements, each one ``detailed`` or not."""
         try:
             relative: str = model_path.relative_to(project_path).as_posix()
         except ValueError:
@@ -76,7 +80,7 @@ class IfcElementEntity:
             "title": model_path.name,
             "path": relative,
             "entity_types": [cls.element_iri(model)],
-            "entities": [cls.entity(element, triples.read(element.is_a(), element.GlobalId)) for element in elements],
+            "entities": [cls.entity(element, triples.read(element.is_a(), element.GlobalId), detailed) for element in elements],
         }
 
     @classmethod
@@ -89,10 +93,13 @@ class IfcElementEntity:
             FileNotFoundError: the named model is not a file.
             LookupError: the project's RO-Crate cannot be read, or the GlobalId is the one of an entity that is not an IfcElement.
             RuntimeError: ifcopenshell, which reading an IFC model needs, is not installed.
+            ImportError: ifcopenshell is installed but cannot be imported; the error is the one the import raised.
         """
         try:
             import ifcopenshell
-        except ImportError as error:
+        except ModuleNotFoundError as error:
+            if error.name != "ifcopenshell":
+                raise
             raise RuntimeError("Reading IFC models needs ifcopenshell, which is not installed here.") from error
 
         from infobim.ifc.adapter.models import IfcProjectModels
@@ -124,7 +131,7 @@ class IfcElementEntity:
             return None
 
         path, model, entity = located
-        return cls.dataset(project_path, path, model, [entity])
+        return cls.dataset(project_path, path, model, [entity], detailed=True)
 
     @classmethod
     def update(cls, project_path: Path, guid: str, changes: Dict[str, Any], model_path: Optional[Path] = None) -> Optional[List[str]]:
@@ -145,7 +152,17 @@ class IfcElementEntity:
         triples: IfcElementTriples = IfcElementTriples(project_path)
         stored: Dict[str, List[str]] = triples.read(entity.is_a(), entity.GlobalId)
         changed: Dict[str, str] = {}
+        changed_attributes: Dict[str, str] = {}
+        attribute_names: Set[str] = IfcElementAttributes.names(entity)
         for name, value in changes.items():
+            if name in attribute_names:
+                if isinstance(value, (dict, list)):
+                    raise ValueError(f"The field {name} takes a text, not a structure.")
+                text = "" if value is None else str(value)
+                if text != IfcElementAttributes.text_of(entity, name):
+                    IfcElementAttributes.assign(entity, name, text)
+                    changed_attributes[name] = text
+                continue
             field: Any = fields.get(name)
             kept: bool = name in IfcElementTriples.FIELDS
             if field is None or not EntityFieldRules.is_editable(field) or (name not in cls.FIELDS and not kept):
@@ -165,7 +182,7 @@ class IfcElementEntity:
                 changed[name] = text
 
         attributes: Dict[str, str] = {name: text for name, text in changed.items() if name in cls.FIELDS}
-        if attributes:
+        if attributes or changed_attributes:
             for name, text in attributes.items():
                 setattr(entity, cls.FIELDS[name], text or None)
             model.write(str(path))
@@ -174,7 +191,7 @@ class IfcElementEntity:
             namespace: str = cls.element_iri(model)[: -len(cls.TYPE)]
             triples.write(namespace, entity.is_a(), entity.GlobalId, kept_changes)
 
-        return sorted(changed)
+        return sorted([*changed, *changed_attributes])
 
     @staticmethod
     def declared(project_path: Path) -> str:
